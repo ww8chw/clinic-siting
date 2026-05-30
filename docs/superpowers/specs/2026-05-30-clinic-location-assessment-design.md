@@ -46,7 +46,7 @@ n8n Cloud (排程通知)            macOS launchd (每月觸發)
 - `nhi_clinics.py` — 健保特約院所 CSV → 過濾科別 → geocode → 半徑內計數。**權威競爭家數與科別來源**，含地址與科別、不含座標，需自行 geocode。
 - `tdx_transit.py` — TDX 運輸平台 API：捷運站、公車站、停車場點位。需 OAuth2 金鑰（Client ID/Secret），流量上限每秒 50 次。
 - `google_places.py` — Google Places API（Nearby Search + Place Details）：取周邊診所競爭者之**評分、評論數**做質化競爭強度；Distance Matrix 取真實步行/車程時間。需 API key、綁帳單並設每日配額上限防呆。單一地點每月一次落在各 SKU 免費額度內（成本約 $0）。
-- `osm_poi.py` — OSM Overpass API：超商、超市、學校等錨點 POI（免費，作為 Google POI 的補充/備援）。
+- `osm_poi.py` — OSM Overpass API（`shop=convenience` 等）：便利超商、超市、學校等錨點 POI（免費，作為 Google POI 的補充/備援）。便利超商可另以統一超商/全家官方門市查詢座標補齊完整度。
 - 本地參考庫 `data/reference/`：
   - SEGIS 250m 人口網格（人口數、年齡、性別）— SHP/GeoJSON 下載
   - 財政部電子發票 B2C 開立資料（鄉鎮市區 × 行業別：平均客單價、平均金額）+ 村里級消費熱度指標 — CSV，**消費力主要代理，更新較即時**
@@ -63,7 +63,8 @@ n8n Cloud (排程通知)            macOS launchd (每月觸發)
   - 商業活動密度（半徑內營業稅籍登記家數）
   - **同科別競爭**：健保名單給權威家數＋科別；Google Places 疊加評分/評論數 → 質化競爭強度（評價弱的競爭者降權）
   - **交通可及**：Distance Matrix 真實步行/車程時間（取代直線假設）+ 半徑內站點/停車場數
-  - 錨點數（超商/超市/學校等）
+  - **便利超商密度**：半徑內超商家數（人流/商圈成熟度代理）
+  - 其他錨點數（超市/學校等）
 - **評分引擎**：讀 `config/specialties.yaml` 的權重矩陣與門檻，各因子正規化（min-max 或門檻分段）後加權 → 各科別 0–100 分。純函式、決定性。
 
 ### 快照層 `snapshot.py`
@@ -90,6 +91,7 @@ n8n Cloud (排程通知)            macOS launchd (每月觸發)
 | 消費力（電子發票客單價/所得） | 中 | 高 | 高 | 中 | 最高 |
 | 商業活動密度（營業稅籍家數） | 中 | 中 | 中 | 低 | 高 |
 | 同科別競爭（質化，負向） | 中 | 低 | 高 | 中 | 最高 |
+| 便利超商密度（人流代理） | 高 | 中 | 中 | 中 | 高 |
 | 交通/停車可及（真實時間） | 高 | 中 | 中 | 高 | 中 |
 | 能見度/臨街 | 中 | 中 | 中 | 中（重隱私） | 高 |
 
@@ -137,7 +139,8 @@ n8n Cloud (排程通知)            macOS launchd (每月觸發)
 | 醫療競爭（評分/評論） | Google Places API | 點位 | REST API（需金鑰，$0/月） | 即時 |
 | 交通可及（真實時間） | Google Distance Matrix | — | REST API（需金鑰，$0/月） | 即時 |
 | 交通站點/停車 | TDX 運輸平台 | 點位 | REST API（需金鑰） | 即時/定期 |
-| 錨點 POI | Google Places / OSM Overpass | 點位 | API（OSM 免費） | 持續 |
+| 便利超商密度 | OSM / Google Places / 超商官方門市查詢 | 點位 | API（OSM 免費） | 持續 |
+| 其他錨點 POI | Google Places / OSM Overpass | 點位 | API（OSM 免費） | 持續 |
 | 地理編碼 | 內政部 TGOS | 門牌點位 | API（免費，每日上限 1 萬筆） | 不定期 |
 | 租金 | 手動輸入 | — | 使用者填入 | 洽談時 |
 | 店面實體屬性 | 手動輸入 | — | 使用者填入 | 看屋時 |
