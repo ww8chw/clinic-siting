@@ -7,4 +7,5 @@ venv/
 .DS_Store
 data/reference/*
 !data/reference/.gitkeep
+!data/reference/*.csv
 *.egg-info/
