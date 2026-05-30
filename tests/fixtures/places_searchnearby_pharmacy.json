@@ -1,0 +1,189 @@
+{
+  "places": [
+    {
+      "types": [
+        "pharmacy",
+        "health",
+        "point_of_interest",
+        "store",
+        "establishment"
+      ],
+      "location": {
+        "latitude": 25.0592362,
+        "longitude": 121.36787659999999
+      },
+      "userRatingCount": 97,
+      "displayName": {
+        "text": "大樹連鎖藥局-龜山長庚店",
+        "languageCode": "zh-TW"
+      }
+    },
+    {
+      "types": [
+        "pharmacy",
+        "drugstore",
+        "health",
+        "point_of_interest",
+        "store",
+        "establishment"
+      ],
+      "location": {
+        "latitude": 25.039609100000003,
+        "longitude": 121.39088539999999
+      },
+      "userRatingCount": 21,
+      "displayName": {
+        "text": "康是美 文青藥局",
+        "languageCode": "zh-TW"
+      }
+    },
+    {
+      "types": [
+        "pharmacy",
+        "drugstore",
+        "child_care_agency",
+        "clothing_store",
+        "health",
+        "point_of_interest",
+        "service",
+        "store",
+        "establishment"
+      ],
+      "location": {
+        "latitude": 25.055988799999998,
+        "longitude": 121.368117
+      },
+      "userRatingCount": 198,
+      "displayName": {
+        "text": "唯新婦嬰藥妝-文新藥局(龜山文化二店)",
+        "languageCode": "zh-TW"
+      }
+    },
+    {
+      "types": [
+        "pharmacy",
+        "health",
+        "point_of_interest",
+        "store",
+        "establishment"
+      ],
+      "location": {
+        "latitude": 25.0595634,
+        "longitude": 121.36841450000001
+      },
+      "userRatingCount": 63,
+      "displayName": {
+        "text": "長青藥局",
+        "languageCode": "zh-TW"
+      }
+    },
+    {
+      "types": [
+        "pharmacy",
+        "health",
+        "point_of_interest",
+        "store",
+        "establishment"
+      ],
+      "location": {
+        "latitude": 25.055835000000002,
+        "longitude": 121.3655554
+      },
+      "userRatingCount": 128,
+      "displayName": {
+        "text": "美康健保藥局 文化店",
+        "languageCode": "zh-TW"
+      }
+    },
+    {
+      "types": [
+        "pharmacy",
+        "health",
+        "point_of_interest",
+        "store",
+        "establishment"
+      ],
+      "location": {
+        "latitude": 25.0484357,
+        "longitude": 121.38511939999998
+      },
+      "userRatingCount": 30,
+      "displayName": {
+        "text": "安博氏藥師藥局 健保處方籤領藥 專業調劑 收受各大醫院 診所 牙科 慢性病連續處方籤",
+        "languageCode": "zh-TW"
+      }
+    },
+    {
+      "types": [
+        "pharmacy",
+        "health",
+        "point_of_interest",
+        "store",
+        "establishment"
+      ],
+      "location": {
+        "latitude": 25.0399118,
+        "longitude": 121.3884826
+      },
+      "userRatingCount": 72,
+      "displayName": {
+        "text": "文青藥局",
+        "languageCode": "zh-TW"
+      }
+    },
+    {
+      "types": [
+        "pharmacy",
+        "health",
+        "point_of_interest",
+        "store",
+        "establishment"
+      ],
+      "location": {
+        "latitude": 25.0515407,
+        "longitude": 121.36360660000001
+      },
+      "userRatingCount": 32,
+      "displayName": {
+        "text": "嘉惠藥局",
+        "languageCode": "zh-TW"
+      }
+    },
+    {
+      "types": [
+        "pharmacy",
+        "health",
+        "point_of_interest",
+        "store",
+        "establishment"
+      ],
+      "location": {
+        "latitude": 25.0547105,
+        "longitude": 121.38029130000001
+      },
+      "userRatingCount": 48,
+      "displayName": {
+        "text": "左外野藥局",
+        "languageCode": "zh-TW"
+      }
+    },
+    {
+      "types": [
+        "pharmacy",
+        "health",
+        "point_of_interest",
+        "store",
+        "establishment"
+      ],
+      "location": {
+        "latitude": 25.0555895,
+        "longitude": 121.3845188
+      },
+      "userRatingCount": 80,
+      "displayName": {
+        "text": "芯羽藥局-龜山優質藥局|專業藥師|推薦藥局|保健品諮詢|慢性處方箋|專業諮詢藥師",
+        "languageCode": "en"
+      }
+    }
+  ]
+}

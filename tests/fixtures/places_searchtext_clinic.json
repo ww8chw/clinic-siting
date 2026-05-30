@@ -1,0 +1,206 @@
+{
+  "places": [
+    {
+      "types": [
+        "medical_center",
+        "hospital",
+        "health",
+        "point_of_interest",
+        "service",
+        "establishment"
+      ],
+      "formattedAddress": "242台灣新北市新莊區四維里富國路184號",
+      "location": {
+        "latitude": 25.0243804,
+        "longitude": 121.4245478
+      },
+      "rating": 4.8,
+      "userRatingCount": 208,
+      "displayName": {
+        "text": "宇康診所 l 台大醫師主治 l 數位X光 l 超音波 l 抽血健檢 l 各式疫苗施打",
+        "languageCode": "zh-TW"
+      }
+    },
+    {
+      "types": [
+        "hospital",
+        "health",
+        "point_of_interest",
+        "service",
+        "establishment"
+      ],
+      "formattedAddress": "242台灣新北市新莊區民全里民安西路21號",
+      "location": {
+        "latitude": 25.021375799999998,
+        "longitude": 121.4271276
+      },
+      "rating": 4.8,
+      "userRatingCount": 1042,
+      "displayName": {
+        "text": "祐幼小兒科診所",
+        "languageCode": "zh-TW"
+      }
+    },
+    {
+      "types": [
+        "medical_center",
+        "hospital",
+        "health",
+        "point_of_interest",
+        "service",
+        "establishment"
+      ],
+      "formattedAddress": "244台灣新北市林口區南勢里文化二路一段525巷6號",
+      "location": {
+        "latitude": 25.076323199999997,
+        "longitude": 121.3732706
+      },
+      "rating": 4.7,
+      "userRatingCount": 216,
+      "displayName": {
+        "text": "宇禾診所",
+        "languageCode": "zh-TW"
+      }
+    },
+    {
+      "types": [
+        "hospital",
+        "health",
+        "point_of_interest",
+        "service",
+        "establishment"
+      ],
+      "formattedAddress": "242台灣新北市新莊區富國里富國路27號",
+      "location": {
+        "latitude": 25.026505,
+        "longitude": 121.41879199999998
+      },
+      "rating": 4.7,
+      "userRatingCount": 45,
+      "displayName": {
+        "text": "康熙診所",
+        "languageCode": "zh-TW"
+      }
+    },
+    {
+      "types": [
+        "medical_clinic",
+        "health",
+        "point_of_interest",
+        "establishment"
+      ],
+      "formattedAddress": "243台灣新北市泰山區義仁里明志路二段42號",
+      "location": {
+        "latitude": 25.053097599999997,
+        "longitude": 121.42942359999999
+      },
+      "rating": 4.5,
+      "userRatingCount": 45,
+      "displayName": {
+        "text": "賴和鴻診所",
+        "languageCode": "zh-TW"
+      }
+    },
+    {
+      "types": [
+        "medical_clinic",
+        "health",
+        "point_of_interest",
+        "establishment"
+      ],
+      "formattedAddress": "243台灣新北市泰山區義學里明志路二段62號",
+      "location": {
+        "latitude": 25.052729799999998,
+        "longitude": 121.4290394
+      },
+      "rating": 4.8,
+      "userRatingCount": 63,
+      "displayName": {
+        "text": "泰和診所",
+        "languageCode": "zh-TW"
+      }
+    },
+    {
+      "types": [
+        "hospital",
+        "health",
+        "point_of_interest",
+        "service",
+        "establishment"
+      ],
+      "formattedAddress": "243台灣新北市泰山區福興里明志路一段271號",
+      "location": {
+        "latitude": 25.060105,
+        "longitude": 121.43213079999998
+      },
+      "rating": 3.3,
+      "userRatingCount": 99,
+      "displayName": {
+        "text": "王嘉興診所",
+        "languageCode": "zh-TW"
+      }
+    },
+    {
+      "types": [
+        "medical_center",
+        "hospital",
+        "doctor",
+        "medical_clinic",
+        "health",
+        "point_of_interest",
+        "service",
+        "establishment"
+      ],
+      "formattedAddress": "244020台灣新北市林口區湖南里仁愛路二段502-1號",
+      "location": {
+        "latitude": 25.0766663,
+        "longitude": 121.37538099999999
+      },
+      "rating": 4.8,
+      "userRatingCount": 86,
+      "displayName": {
+        "text": "貓頭鷹親子診所",
+        "languageCode": "zh-TW"
+      }
+    },
+    {
+      "types": [
+        "hospital",
+        "health",
+        "point_of_interest",
+        "service",
+        "establishment"
+      ],
+      "formattedAddress": "號 No, No. 92建中街全泰里新莊區新北市台灣 242",
+      "location": {
+        "latitude": 25.0367119,
+        "longitude": 121.4468801
+      },
+      "rating": 4.9,
+      "userRatingCount": 949,
+      "displayName": {
+        "text": "巧兒親子診所",
+        "languageCode": "zh-TW"
+      }
+    },
+    {
+      "types": [
+        "doctor",
+        "health",
+        "point_of_interest",
+        "establishment"
+      ],
+      "formattedAddress": "243台灣新北市泰山區福泰里泰林路二段182號",
+      "location": {
+        "latitude": 25.0608619,
+        "longitude": 121.43372199999999
+      },
+      "rating": 4.5,
+      "userRatingCount": 64,
+      "displayName": {
+        "text": "泰安診所",
+        "languageCode": "zh-TW"
+      }
+    }
+  ]
+}
