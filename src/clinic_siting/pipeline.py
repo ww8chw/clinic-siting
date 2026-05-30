@@ -61,8 +61,9 @@ def collect_live(center: tuple[float, float]) -> dict:
 
     if google_key:
         try:
-            resp = google_places.fetch_search_text(
-                "診所", center[0], center[1], _DRIVE_M, google_key)
+            # nearby + locationRestriction → 嚴格限制在半徑內，計數較準
+            resp = google_places.fetch_search_nearby(
+                ["doctor"], center[0], center[1], _DRIVE_M, google_key)
             clinics = _points(google_places.parse_places(resp))
             raw["competition_count"] = count_within(center, clinics, DRIVE_KM)
         except Exception:
@@ -83,24 +84,27 @@ def collect_live(center: tuple[float, float]) -> dict:
         pass
 
     try:
-        q = osm_poi.build_query("amenity", "shop", center[0], center[1], _WALK_M)
+        # 餐飲為商業活動代理（amenity=restaurant 為有效 OSM tag）
+        q = osm_poi.build_query("amenity", "restaurant", center[0], center[1], _WALK_M)
         biz = _points(osm_poi.parse_overpass(osm_poi.fetch_overpass(q)))
         raw["business_count"] = count_within(center, biz, WALK_KM)
     except Exception:
         pass
 
-    try:
-        q = osm_poi.build_query("landuse", "residential", center[0], center[1], _DRIVE_M)
-        # 不同 landuse value 各查一次，計算出現的類型數
-        types = 0
-        for value in ("residential", "commercial", "retail", "industrial"):
+    # 不同 landuse value 各自獨立查詢，單一失敗不影響其餘類型計數
+    types = 0
+    got_landuse = False
+    for value in ("residential", "commercial", "retail", "industrial"):
+        try:
             qv = osm_poi.build_query("landuse", value, center[0], center[1], _DRIVE_M)
             els = osm_poi.parse_overpass(osm_poi.fetch_overpass(qv))
+            got_landuse = True
             if els:
                 types += 1
+        except Exception:
+            pass
+    if got_landuse:
         raw["landuse_types"] = types
-    except Exception:
-        pass
 
     tdx_id = env.get_key("TDX_CLIENT_ID")
     tdx_secret = env.get_key("TDX_CLIENT_SECRET")
