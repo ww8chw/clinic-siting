@@ -1,0 +1,90 @@
+weight_levels:
+  最高: 5
+  高: 4
+  中: 3
+  低: 2
+  無: 0
+
+factors:
+  - population_density       # 總人口/密度
+  - age_gender               # 25–45歲/女性比
+  - day_night_gap            # 晝夜人口落差
+  - purchasing_power         # 消費力
+  - business_density         # 商業活動密度
+  - land_use_mix             # 土地使用混合
+  - competition              # 同科別競爭（負向）
+  - complementary_anchors    # 互補錨點加權
+  - convenience_density      # 便利超商密度
+  - accessibility            # 交通/停車可及
+  - redevelopment_stage      # 重劃區發展階段/屋齡
+  - visibility               # 能見度/臨街
+
+negative_factors:
+  - competition
+
+specialties:
+  family_medicine:
+    population_density: 高
+    age_gender: 中
+    day_night_gap: 中
+    purchasing_power: 中
+    business_density: 中
+    land_use_mix: 中
+    competition: 中
+    complementary_anchors: 中
+    convenience_density: 高
+    accessibility: 高
+    redevelopment_stage: 中
+    visibility: 中
+  functional_medicine:
+    population_density: 中
+    age_gender: 中
+    day_night_gap: 中
+    purchasing_power: 高
+    business_density: 中
+    land_use_mix: 中
+    competition: 低
+    complementary_anchors: 中
+    convenience_density: 中
+    accessibility: 中
+    redevelopment_stage: 中
+    visibility: 中
+  weight_loss:
+    population_density: 中
+    age_gender: 高
+    day_night_gap: 中
+    purchasing_power: 高
+    business_density: 中
+    land_use_mix: 中
+    competition: 高
+    complementary_anchors: 中
+    convenience_density: 中
+    accessibility: 中
+    redevelopment_stage: 中
+    visibility: 中
+  psychiatry:
+    population_density: 高
+    age_gender: 中
+    day_night_gap: 中
+    purchasing_power: 中
+    business_density: 低
+    land_use_mix: 中
+    competition: 中
+    complementary_anchors: 中
+    convenience_density: 中
+    accessibility: 高
+    redevelopment_stage: 中
+    visibility: 中
+  aesthetics:
+    population_density: 中
+    age_gender: 高
+    day_night_gap: 中
+    purchasing_power: 最高
+    business_density: 高
+    land_use_mix: 中
+    competition: 最高
+    complementary_anchors: 中
+    convenience_density: 高
+    accessibility: 中
+    redevelopment_stage: 中
+    visibility: 高
