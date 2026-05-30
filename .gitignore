@@ -4,6 +4,7 @@ __pycache__/
 venv/
 .env
 .pytest_cache/
+.DS_Store
 data/reference/*
 !data/reference/.gitkeep
 *.egg-info/

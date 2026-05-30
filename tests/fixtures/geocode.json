@@ -1,0 +1,110 @@
+{
+   "results" : 
+   [
+      {
+         "address_components" : 
+         [
+            {
+               "long_name" : "503號",
+               "short_name" : "503號",
+               "types" : 
+               [
+                  "street_number"
+               ]
+            },
+            {
+               "long_name" : "樂善二路",
+               "short_name" : "樂善二路",
+               "types" : 
+               [
+                  "route"
+               ]
+            },
+            {
+               "long_name" : "樂善里",
+               "short_name" : "樂善里",
+               "types" : 
+               [
+                  "administrative_area_level_3",
+                  "political"
+               ]
+            },
+            {
+               "long_name" : "龜山區",
+               "short_name" : "龜山區",
+               "types" : 
+               [
+                  "administrative_area_level_2",
+                  "political"
+               ]
+            },
+            {
+               "long_name" : "桃園市",
+               "short_name" : "桃園市",
+               "types" : 
+               [
+                  "administrative_area_level_1",
+                  "political"
+               ]
+            },
+            {
+               "long_name" : "台灣",
+               "short_name" : "TW",
+               "types" : 
+               [
+                  "country",
+                  "political"
+               ]
+            },
+            {
+               "long_name" : "333",
+               "short_name" : "333",
+               "types" : 
+               [
+                  "postal_code"
+               ]
+            }
+         ],
+         "formatted_address" : "333台灣桃園市龜山區樂善里樂善二路503號",
+         "geometry" : 
+         {
+            "location" : 
+            {
+               "lat" : 25.0461974,
+               "lng" : 121.3918275
+            },
+            "location_type" : "ROOFTOP",
+            "viewport" : 
+            {
+               "northeast" : 
+               {
+                  "lat" : 25.0474073302915,
+                  "lng" : 121.3931671302915
+               },
+               "southwest" : 
+               {
+                  "lat" : 25.0447093697085,
+                  "lng" : 121.3904691697085
+               }
+            }
+         },
+         "navigation_points" : 
+         [
+            {
+               "location" : 
+               {
+                  "latitude" : 25.0459822,
+                  "longitude" : 121.391813
+               }
+            }
+         ],
+         "place_id" : "ChIJC1YG8TCnQjQR-c4iDBtktSw",
+         "types" : 
+         [
+            "street_address",
+            "subpremise"
+         ]
+      }
+   ],
+   "status" : "OK"
+}

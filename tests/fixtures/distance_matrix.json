@@ -1,0 +1,32 @@
+{
+   "destination_addresses" : 
+   [
+      "242台灣新北市新莊區民全里民安西路23號七樓號"
+   ],
+   "origin_addresses" : 
+   [
+      "333台灣桃園市龜山區樂善里樂善二路503號"
+   ],
+   "rows" : 
+   [
+      {
+         "elements" : 
+         [
+            {
+               "distance" : 
+               {
+                  "text" : "5.3 公里",
+                  "value" : 5274
+               },
+               "duration" : 
+               {
+                  "text" : "14 分鐘",
+                  "value" : 820
+               },
+               "status" : "OK"
+            }
+         ]
+      }
+   ],
+   "status" : "OK"
+}
