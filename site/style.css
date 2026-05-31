@@ -111,6 +111,26 @@ td.addr { color: var(--muted); font-size: 0.82rem; max-width: 360px; }
 
 #map { height: 420px; border-radius: 8px; }
 
+.map-legend {
+  background: rgba(255, 255, 255, 0.92);
+  padding: 8px 10px;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  font-size: 12px;
+  line-height: 1.6;
+  color: #1f2937;
+}
+.map-legend .lg-row { display: flex; align-items: center; }
+.map-legend .lg-dot {
+  display: inline-block; width: 11px; height: 11px;
+  border-radius: 50%; margin-right: 6px; flex: none;
+}
+.map-legend .lg-pin { margin-right: 4px; }
+.map-legend .lg-line {
+  display: inline-block; width: 14px; height: 0;
+  border-top: 2px solid; margin-right: 6px; flex: none;
+}
+
 footer {
   max-width: 1100px; margin: 0 auto;
   padding: 0 1.25rem 2rem; color: var(--muted); font-size: 0.85rem;

@@ -303,6 +303,24 @@ function renderMap(payload, geo) {
         .addTo(map).bindPopup(`${cfg.label}${p.name ? "：" + p.name : ""}`);
     });
   });
+
+  // 圖例：說明各色點點與範圍圈的類別
+  const legend = L.control({ position: "bottomright" });
+  legend.onAdd = function () {
+    const div = L.DomUtil.create("div", "map-legend");
+    const dot = (color, count) =>
+      `<span class="lg-dot" style="background:${color}"></span>`;
+    const items = [
+      `<span class="lg-pin">📍</span>候選點`,
+      ...Object.entries(groups).map(([key, cfg]) =>
+        `${dot(cfg.color)}${cfg.label}（${(geo[key] || []).length}）`),
+      `<span class="lg-line" style="border-color:#2563eb"></span>步行 1km`,
+      `<span class="lg-line" style="border-color:#16a34a"></span>車程 3km`,
+    ];
+    div.innerHTML = items.map(t => `<div class="lg-row">${t}</div>`).join("");
+    return div;
+  };
+  legend.addTo(map);
 }
 
 async function main() {
