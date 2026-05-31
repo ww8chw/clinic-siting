@@ -4,6 +4,7 @@ from clinic_siting.data_sources.reference import (
     parse_income_csv,
     parse_population_csv,
     district_income_summary,
+    village_summary,
 )
 
 FIX = Path(__file__).resolve().parents[1] / "fixtures"
@@ -45,3 +46,23 @@ def test_district_income_summary_population_weighted():
     # 戶數加權中位所得介於最小與最大村里中位之間
     assert 406 <= summ["weighted_median"] <= 696
     assert summ["village_count"] == 5
+
+
+def test_village_summary_households_and_population_estimate():
+    inc = parse_income_csv(INCOME)
+    s = village_summary(inc, "桃園市龜山區", "樂善里",
+                        district_population=189052)
+    assert s["households"] == 5166
+    total_hh = 2346 + 1814 + 1323 + 1470 + 5166
+    # 人口估 = 區人口 × 里戶數 / 區總戶數
+    expected = round(189052 * 5166 / total_hh)
+    assert s["population_est"] == expected
+    assert s["estimated"] is True
+
+
+def test_village_summary_missing_village():
+    inc = parse_income_csv(INCOME)
+    s = village_summary(inc, "桃園市龜山區", "不存在里",
+                        district_population=189052)
+    assert s["households"] is None
+    assert s["population_est"] is None

@@ -31,11 +31,27 @@ BUSINESS_LO, BUSINESS_HI = 0.0, 40.0          # 商業 POI 計數（餐飲代理
 LANDUSE_LO, LANDUSE_HI = 1.0, 6.0             # 土地使用類型數
 TRANSIT_LO, TRANSIT_HI = 0.0, 20.0            # 公車站數
 DRIVE_MIN_LO, DRIVE_MIN_HI = 5.0, 30.0        # 車程分鐘（越短越好）
+REDEV_AGE_LO, REDEV_AGE_HI = 0.0, 40.0        # 成交屋齡中位（年，越新越發展）
 
 # 競爭需求/供給校準
 VISIT_RATE = 0.02                              # 人口 → 月就診需求代理係數
 DEMAND_PER_CLINIC_LO, DEMAND_PER_CLINIC_HI = 200.0, 800.0
 NO_COMPETITION_SCORE = 70.0                    # 無同業：需求未滿足但缺群聚錨點
+
+# 能見度：OSM 臨街道路 highway 等級 → 基礎分（越主要越顯眼）
+HIGHWAY_VISIBILITY = {
+    "motorway": 95.0, "trunk": 95.0,
+    "primary": 90.0, "primary_link": 85.0,
+    "secondary": 78.0, "secondary_link": 72.0,
+    "tertiary": 62.0, "tertiary_link": 58.0,
+    "unclassified": 48.0,
+    "residential": 35.0,
+    "living_street": 28.0,
+    "service": 22.0,
+}
+HIGHWAY_DEFAULT = 40.0
+LANE_BONUS = 6.0           # 每多 1 車道（>2）加分
+LANE_BONUS_CAP_LANES = 4  # 最多計入 4 條額外車道
 
 
 @dataclass
@@ -51,6 +67,26 @@ def _competition_score(population, count) -> float:
         return NO_COMPETITION_SCORE
     demand_per_clinic = demand / count
     return minmax_score(demand_per_clinic, DEMAND_PER_CLINIC_LO, DEMAND_PER_CLINIC_HI)
+
+
+def road_visibility_score(highway: str, lanes) -> float:
+    """單條臨街道路的能見度分：highway 等級基礎分 + 車道數加成，鎖 0–100。"""
+    base = HIGHWAY_VISIBILITY.get(highway, HIGHWAY_DEFAULT)
+    if lanes:
+        extra = min(max(lanes - 2, 0), LANE_BONUS_CAP_LANES)
+        base += extra * LANE_BONUS
+    return max(0.0, min(100.0, base))
+
+
+def best_road_visibility(roads: list[dict]) -> dict | None:
+    """從周邊道路清單取能見度最高者：回傳 {name, highway, lanes, score}。
+    空清單回 None。"""
+    best = None
+    for r in roads:
+        score = road_visibility_score(r.get("highway", ""), r.get("lanes"))
+        if best is None or score > best["score"]:
+            best = {**r, "score": score}
+    return best
 
 
 def _accessibility_score(transit_count, drive_time_min) -> float:
@@ -117,9 +153,21 @@ def build_factors(raw: dict) -> dict[str, FactorResult]:
     out["age_gender"] = FactorResult(NEUTRAL, "missing")
     out["day_night_gap"] = FactorResult(NEUTRAL, "missing")
 
-    # 手動因子 → 中性 manual（未來由介面覆寫）
-    out["redevelopment_stage"] = FactorResult(NEUTRAL, "manual")
-    out["visibility"] = FactorResult(NEUTRAL, "manual")
+    # 能見度：OSM 臨街道路等級代理；無道路資料 → 手動中性
+    roads = raw.get("roads")
+    best = best_road_visibility(roads) if roads else None
+    if best is not None:
+        out["visibility"] = FactorResult(best["score"], "real")
+    else:
+        out["visibility"] = FactorResult(NEUTRAL, "manual")
+
+    # 重劃/發展階段：實價登錄區級成交屋齡中位（越新越發展）；無資料 → 手動中性
+    if raw.get("building_age_median") is not None:
+        score = minmax_score(raw["building_age_median"],
+                             REDEV_AGE_LO, REDEV_AGE_HI, invert=True)
+        out["redevelopment_stage"] = FactorResult(score, "degraded")
+    else:
+        out["redevelopment_stage"] = FactorResult(NEUTRAL, "manual")
 
     return out
 
@@ -142,9 +190,17 @@ def factor_explanation(name: str, raw: dict) -> dict:
         }
     if name == "population_density":
         v = g("population")
+        vh = g("village_households")
+        vp = g("village_population_est")
+        village_txt = ""
+        if vh is not None:
+            village_txt = f"｜所在里 {vh:,.0f} 戶"
+            if vp is not None:
+                village_txt += f"、約 {vp:,.0f} 人（估）"
         return {
-            "raw": f"區人口 {v:,.0f} 人" if v is not None else "無資料",
-            "basis": f"線性映射 {POP_LO:,.0f}–{POP_HI:,.0f} 人 → 0–100",
+            "raw": (f"區人口 {v:,.0f} 人{village_txt}" if v is not None else "無資料"),
+            "basis": (f"線性映射 {POP_LO:,.0f}–{POP_HI:,.0f} 人 → 0–100"
+                      f"（里級戶數為財政部實數、人口按戶數比例估算）"),
         }
     if name == "competition":
         c = g("competition_count")
@@ -193,8 +249,26 @@ def factor_explanation(name: str, raw: dict) -> dict:
             "basis": (f"公車站映射 0–{TRANSIT_HI:.0f} 站；車程 {DRIVE_MIN_LO:.0f}–"
                       f"{DRIVE_MIN_HI:.0f} 分（反向）取平均"),
         }
+    if name == "visibility":
+        roads = raw.get("roads")
+        best = best_road_visibility(roads) if roads else None
+        if best is None:
+            return {"raw": "無臨街道路資料", "basis": "中性 50（待 OSM 道路或人工覆寫）"}
+        lane_txt = f"、{best['lanes']} 車道" if best.get("lanes") else ""
+        return {
+            "raw": f"臨街主道「{best['name']}」({best['highway']}{lane_txt})",
+            "basis": (f"OSM highway 等級基礎分 + 每增 1 車道(>2) +{LANE_BONUS:.0f}"
+                      f"（取周邊最高等級道路）"),
+        }
     if name in ("age_gender", "day_night_gap"):
         return {"raw": "尚無資料來源", "basis": "中性 50（待補單齡人口／晝夜信令）"}
-    if name in ("redevelopment_stage", "visibility"):
-        return {"raw": "待人工填入", "basis": "中性 50（手動因子，未來由介面覆寫）"}
+    if name == "redevelopment_stage":
+        v = g("building_age_median")
+        if v is None:
+            return {"raw": "待人工填入", "basis": "中性 50（手動因子，未來由介面覆寫）"}
+        return {
+            "raw": f"區內成交屋齡中位 {v:.0f} 年",
+            "basis": (f"實價登錄屋齡映射 {REDEV_AGE_LO:.0f}–{REDEV_AGE_HI:.0f} 年（反向，"
+                      f"越新越高）；區級代理標 degraded"),
+        }
     return {"raw": "—", "basis": "—"}

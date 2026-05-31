@@ -67,6 +67,22 @@ def parse_population_csv(text: str) -> dict[str, dict]:
     return out
 
 
+def village_summary(income: dict[str, dict], district_prefix: str,
+                    village: str, district_population: int) -> dict:
+    """單一村里的戶數（財政部實數）與人口估（按戶數比例分攤區人口）。
+
+    村里級人口開放資料受 WAF 阻擋難以程式化下載，故人口以戶數比例估算，estimated=True。
+    找不到村里 → households/population_est 皆 None。"""
+    row = income.get(village)
+    if row is None or row.get("district") != district_prefix:
+        return {"households": None, "population_est": None, "estimated": True}
+    households = row["households"]
+    villages = [v for v in income.values() if v["district"] == district_prefix]
+    total_hh = sum(v["households"] for v in villages)
+    pop_est = round(district_population * households / total_hh) if total_hh else None
+    return {"households": households, "population_est": pop_est, "estimated": True}
+
+
 def district_income_summary(income: dict[str, dict], district_prefix: str) -> dict:
     """聚合某行政區所有村里：戶數總和、戶數加權中位所得、村里數。"""
     villages = [v for v in income.values() if v["district"] == district_prefix]

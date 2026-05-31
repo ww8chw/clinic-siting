@@ -10,12 +10,15 @@ from clinic_siting.data_sources import (
     geocode,
     google_places,
     osm_poi,
+    osm_road,
+    realprice,
     tdx_transit,
 )
 from clinic_siting.data_sources.reference import (
     parse_income_csv,
     parse_population_csv,
     district_income_summary,
+    village_summary,
 )
 from clinic_siting.scoring.config import load_specialty_config
 from clinic_siting.scoring.engine import score_all_specialties
@@ -23,9 +26,11 @@ from clinic_siting.snapshot import append_snapshot, load_last_snapshot, fill_deg
 
 INCOME_DISTRICT = "桃園市龜山區"
 POP_REGION = "龜山區"
+SITE_VILLAGE = "樂善里"          # 候選點所在村里（樂善二路503號）
 
 _WALK_M = int(WALK_KM * 1000)
 _DRIVE_M = int(DRIVE_KM * 1000)
+_VISIBILITY_M = 150          # 能見度只看店面臨街範圍
 
 
 def collect_offline(reference_dir,
@@ -42,10 +47,15 @@ def collect_offline(reference_dir,
     population = parse_population_csv(pop_file.read_text(encoding="utf-8-sig"))
     region = population.get(pop_region, {"population": 0, "households": 0})
 
+    village = village_summary(income, income_district, SITE_VILLAGE,
+                              region["population"])
+
     return {
         "weighted_median_income": summary["weighted_median"],
         "population": region["population"],
         "households": region["households"],
+        "village_households": village["households"],
+        "village_population_est": village["population_est"],
     }
 
 
@@ -121,6 +131,28 @@ def collect_live(center: tuple[float, float]) -> tuple[dict, dict]:
             pass
     if got_landuse:
         raw["landuse_types"] = types
+
+    # 能見度：周邊具名道路的 highway 等級（臨街顯眼度代理）
+    try:
+        rq = osm_road.build_nearest_road_query(center[0], center[1], _VISIBILITY_M)
+        roads = osm_road.parse_roads(osm_road.fetch_roads(rq))
+        if roads:
+            raw["roads"] = roads
+    except Exception:
+        pass
+
+    # 重劃/屋齡：實價登錄區級成交屋齡中位（逐季回退至可下載者）
+    today = date.today()
+    for season in realprice.recent_seasons(today.year, today.month, n=4):
+        try:
+            csv_text = realprice.fetch_lvr_main_csv(season)
+            recs = realprice.parse_lvr_main_csv(csv_text)
+            age = realprice.district_median_building_age(recs, POP_REGION, today.year)
+            if age is not None:
+                raw["building_age_median"] = age
+                break
+        except Exception:
+            continue
 
     tdx_id = env.get_key("TDX_CLIENT_ID")
     tdx_secret = env.get_key("TDX_CLIENT_SECRET")

@@ -3,6 +3,8 @@ from clinic_siting.analysis.factors import (
     FactorResult,
     build_factors,
     factor_scores,
+    road_visibility_score,
+    best_road_visibility,
 )
 
 # 龜山量級的完整 raw 輸入
@@ -74,3 +76,64 @@ def test_factor_scores_returns_plain_floats():
 def test_deterministic():
     assert build_factors(FULL_RAW)["purchasing_power"].score == \
         build_factors(FULL_RAW)["purchasing_power"].score
+
+
+def test_road_visibility_higher_class_scores_higher():
+    # 主要道路 > 次要 > 巷弄
+    assert road_visibility_score("primary", None) > \
+        road_visibility_score("tertiary", None)
+    assert road_visibility_score("tertiary", None) > \
+        road_visibility_score("residential", None)
+
+
+def test_road_visibility_lanes_add_bonus():
+    assert road_visibility_score("unclassified", 4) > \
+        road_visibility_score("unclassified", 2)
+    # 分數鎖在 0–100
+    assert 0.0 <= road_visibility_score("motorway", 8) <= 100.0
+
+
+def test_best_road_visibility_picks_max():
+    roads = [
+        {"name": "郵園路", "highway": "residential", "lanes": None},
+        {"name": "樂善二路", "highway": "unclassified", "lanes": 4},
+        {"name": "文桃路", "highway": "tertiary", "lanes": 2},
+    ]
+    best = best_road_visibility(roads)
+    # 文桃路 tertiary 應勝出，分數高於人工中性 50
+    assert best["name"] == "文桃路"
+    assert best["score"] > 50.0
+
+
+def test_best_road_visibility_empty_returns_none():
+    assert best_road_visibility([]) is None
+
+
+def test_visibility_factor_real_when_roads_present():
+    raw = dict(FULL_RAW, roads=[
+        {"name": "文桃路", "highway": "tertiary", "lanes": 2}])
+    f = build_factors(raw)
+    assert f["visibility"].source == "real"
+    assert f["visibility"].score > 50.0
+
+
+def test_visibility_factor_manual_without_roads():
+    f = build_factors(FULL_RAW)
+    assert f["visibility"].source == "manual"
+    assert f["visibility"].score == 50.0
+
+
+def test_redevelopment_from_building_age():
+    young = dict(FULL_RAW, building_age_median=5.0)
+    old = dict(FULL_RAW, building_age_median=35.0)
+    fy = build_factors(young)["redevelopment_stage"]
+    fo = build_factors(old)["redevelopment_stage"]
+    # 屋齡越新 → 重劃/發展分越高
+    assert fy.score > fo.score
+    assert fy.source == "degraded"   # 區級實價登錄代理
+
+
+def test_redevelopment_manual_without_building_age():
+    f = build_factors(FULL_RAW)["redevelopment_stage"]
+    assert f.source == "manual"
+    assert f.score == 50.0
