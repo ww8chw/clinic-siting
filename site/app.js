@@ -259,10 +259,20 @@ function renderTrend(payload) {
     tension: 0.25,
     spanGaps: true,
   }));
+  // 各科分數常落在窄區間，自動縮放 Y 軸到實際範圍（含上下緩衝）讓線分開
+  const vals = names.flatMap(n => (trend.specialties[n] || []))
+    .filter(v => v != null);
+  let yMin, yMax;
+  if (vals.length) {
+    const lo = Math.min(...vals), hi = Math.max(...vals);
+    const pad = Math.max((hi - lo) * 0.15, 2);
+    yMin = Math.max(0, Math.floor(lo - pad));
+    yMax = Math.min(100, Math.ceil(hi + pad));
+  }
   new Chart(ctx, {
     type: "line",
     data: { labels: trend.dates, datasets },
-    options: { responsive: true, scales: { y: { suggestedMin: 0, suggestedMax: 100 } } },
+    options: { responsive: true, scales: { y: { min: yMin, max: yMax } } },
   });
 }
 
