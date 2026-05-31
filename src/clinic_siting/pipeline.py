@@ -133,6 +133,18 @@ def collect_live(center: tuple[float, float]) -> tuple[dict, dict]:
     except Exception:
         pass
 
+    # 學校鄰近：步行 1km 內學校（日間人流/年輕家庭客群代理）
+    try:
+        q = osm_poi.build_query("amenity", "school", center[0], center[1], _WALK_M)
+        schools = _points(osm_poi.parse_overpass(osm_poi.fetch_overpass(q)))
+        for s in schools:
+            s["dist_km"] = round(
+                haversine_km(center[0], center[1], s["lat"], s["lon"]), 2)
+        raw["school_count"] = count_within(center, schools, WALK_KM)
+        geo["schools"] = schools
+    except Exception:
+        pass
+
     # 不同 landuse value 各自獨立查詢，單一失敗不影響其餘類型計數
     types = 0
     got_landuse = False

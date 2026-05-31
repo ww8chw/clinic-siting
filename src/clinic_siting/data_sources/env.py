@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from dotenv import dotenv_values
@@ -13,5 +14,6 @@ def load_env() -> dict[str, str]:
 
 
 def get_key(name: str) -> str | None:
-    """取單一金鑰；不存在回 None（讓 fetch 層決定要不要 skip）。"""
-    return load_env().get(name)
+    """取單一金鑰：環境變數優先（供 CI/GitHub Actions secrets），其次本地 .env；
+    皆無回 None（讓 fetch 層決定要不要 skip）。"""
+    return os.environ.get(name) or load_env().get(name)

@@ -23,6 +23,7 @@ const FACTOR_LABELS = {
   accessibility: "交通可及",
   redevelopment_stage: "重劃/屋齡",
   visibility: "能見度",
+  school_proximity: "學校鄰近",
 };
 
 const SOURCE_LABELS = {
@@ -295,6 +296,7 @@ function renderMap(payload, geo) {
     anchors: { color: "#7c3aed", label: "互補錨點" },
     convenience: { color: "#d97706", label: "便利商店" },
     transit: { color: "#0891b2", label: "公車站" },
+    schools: { color: "#65a30d", label: "學校" },
   };
   Object.entries(groups).forEach(([key, cfg]) => {
     (geo[key] || []).forEach(p => {

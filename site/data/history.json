@@ -1,0 +1,708 @@
+{
+  "generated": "2026-05-31T11:42:29",
+  "meta": {
+    "address": "桃園市龜山區樂善二路503號",
+    "latlon": [
+      25.0461974,
+      121.3918275
+    ]
+  },
+  "trend": {
+    "dates": [
+      "2026-05-31"
+    ],
+    "specialties": {
+      "family_medicine": [
+        74.9449534855093
+      ],
+      "functional_medicine": [
+        74.13428277486292
+      ],
+      "weight_loss": [
+        75.19200428321584
+      ],
+      "psychiatry": [
+        76.19999144983503
+      ],
+      "aesthetics": [
+        74.42665588467867
+      ]
+    }
+  },
+  "factor_trend": {
+    "dates": [
+      "2026-05-31"
+    ],
+    "factors": {
+      "population_density": [
+        55.6208
+      ],
+      "age_gender": [
+        89.22999999999999
+      ],
+      "day_night_gap": [
+        89.44239771857914
+      ],
+      "school_proximity": [
+        66.66666666666666
+      ],
+      "purchasing_power": [
+        48.48864668483197
+      ],
+      "business_density": [
+        37.5
+      ],
+      "land_use_mix": [
+        40.0
+      ],
+      "competition": [
+        100.0
+      ],
+      "complementary_anchors": [
+        95.0
+      ],
+      "convenience_density": [
+        80.0
+      ],
+      "accessibility": [
+        100.0
+      ],
+      "redevelopment_stage": [
+        97.5
+      ],
+      "visibility": [
+        74.0
+      ]
+    }
+  },
+  "radar": {
+    "labels": [
+      "family_medicine",
+      "functional_medicine",
+      "weight_loss",
+      "psychiatry",
+      "aesthetics"
+    ],
+    "scores": [
+      74.9449534855093,
+      74.13428277486292,
+      75.19200428321584,
+      76.19999144983503,
+      74.42665588467867
+    ]
+  },
+  "factors": [
+    {
+      "factor": "population_density",
+      "score": 55.6208,
+      "source": "real",
+      "raw_text": "區人口 189,052 人｜所在里 5,166 戶、約 21,461 人（估）",
+      "basis_text": "線性映射 50,000–300,000 人 → 0–100（里級戶數為財政部實數、人口按戶數比例估算）",
+      "prev_score": null,
+      "delta": null,
+      "delta_pct": null
+    },
+    {
+      "factor": "age_gender",
+      "score": 89.22999999999999,
+      "source": "real",
+      "raw_text": "壯年 25–49 占 56.2%、女性占 51.4%（村里 22,507 人）",
+      "basis_text": "自費客群代理：壯年占比映射 30%–55%、女性占比映射 45%–55%，加權 70%:30% → 0–100",
+      "prev_score": null,
+      "delta": null,
+      "delta_pct": null
+    },
+    {
+      "factor": "day_night_gap",
+      "score": 89.44239771857914,
+      "source": "real",
+      "raw_text": "營業家數每千人為全國 0.86 倍（日夜均衡）",
+      "basis_text": "比值=1 日夜最均衡得分最高；偏離以 |ln(比值)| 線性扣分",
+      "prev_score": null,
+      "delta": null,
+      "delta_pct": null
+    },
+    {
+      "factor": "school_proximity",
+      "score": 66.66666666666666,
+      "source": "real",
+      "raw_text": "步行 1km 內學校 1 所",
+      "basis_text": "加成型：無學校中性 50，每多 1 所往上加，3 所滿分（OSM amenity=school，日間人流/年輕家庭代理）",
+      "prev_score": null,
+      "delta": null,
+      "delta_pct": null
+    },
+    {
+      "factor": "purchasing_power",
+      "score": 48.48864668483197,
+      "source": "real",
+      "raw_text": "戶中位所得 568 千元",
+      "basis_text": "線性映射 350–800 千元 → 0–100",
+      "prev_score": null,
+      "delta": null,
+      "delta_pct": null
+    },
+    {
+      "factor": "business_density",
+      "score": 37.5,
+      "source": "degraded",
+      "raw_text": "1km 內餐飲 15 家（商業活動代理）",
+      "basis_text": "線性映射 0–40 家 → 0–100（OSM 代理、無全量稅籍，標 degraded）",
+      "prev_score": null,
+      "delta": null,
+      "delta_pct": null
+    },
+    {
+      "factor": "land_use_mix",
+      "score": 40.0,
+      "source": "real",
+      "raw_text": "3km 內土地使用類型 3 種",
+      "basis_text": "線性映射 1–6 種 → 0–100",
+      "prev_score": null,
+      "delta": null,
+      "delta_pct": null
+    },
+    {
+      "factor": "competition",
+      "score": 100.0,
+      "source": "real",
+      "raw_text": "3km 內同業 16 家（距離加權有效 4.4 家）｜月需求估 3,781 人次（每家 855）",
+      "basis_text": "近者競爭強：步行 1km 內權重 1.0，至車程 3km 線性衰減至 0.2；有效家數映射 200–800 → 0–100",
+      "prev_score": null,
+      "delta": null,
+      "delta_pct": null
+    },
+    {
+      "factor": "complementary_anchors",
+      "score": 95.0,
+      "source": "real",
+      "raw_text": "3km 內藥局/醫院 20 家（距離加權有效 9.5 家）",
+      "basis_text": "近者綜效強：步行 1km 內權重 1.0，至車程 3km 線性衰減至 0.2；有效家數映射 0–10 → 0–100",
+      "prev_score": null,
+      "delta": null,
+      "delta_pct": null
+    },
+    {
+      "factor": "convenience_density",
+      "score": 80.0,
+      "source": "real",
+      "raw_text": "1km 內超商 20 家",
+      "basis_text": "線性映射 0–25 家 → 0–100",
+      "prev_score": null,
+      "delta": null,
+      "delta_pct": null
+    },
+    {
+      "factor": "accessibility",
+      "score": 100.0,
+      "source": "real",
+      "raw_text": "1km 內公車站 50 站",
+      "basis_text": "公車站映射 0–20 站；車程 5–30 分（反向）取平均",
+      "prev_score": null,
+      "delta": null,
+      "delta_pct": null
+    },
+    {
+      "factor": "redevelopment_stage",
+      "score": 97.5,
+      "source": "degraded",
+      "raw_text": "區內成交屋齡中位 1 年",
+      "basis_text": "實價登錄屋齡映射 0–40 年（反向，越新越高）；區級代理標 degraded",
+      "prev_score": null,
+      "delta": null,
+      "delta_pct": null
+    },
+    {
+      "factor": "visibility",
+      "score": 74.0,
+      "source": "real",
+      "raw_text": "臨街主道「文桃路」(tertiary、4 車道)",
+      "basis_text": "OSM highway 等級基礎分 + 每增 1 車道(>2) +6（取周邊最高等級道路）",
+      "prev_score": null,
+      "delta": null,
+      "delta_pct": null
+    }
+  ],
+  "breakdowns": {
+    "family_medicine": {
+      "total": 74.94,
+      "rows": [
+        {
+          "factor": "population_density",
+          "weight": 4,
+          "level": "高",
+          "score": 55.6208,
+          "contribution": 5.17
+        },
+        {
+          "factor": "age_gender",
+          "weight": 3,
+          "level": "中",
+          "score": 89.22999999999999,
+          "contribution": 6.23
+        },
+        {
+          "factor": "day_night_gap",
+          "weight": 3,
+          "level": "中",
+          "score": 89.44239771857914,
+          "contribution": 6.24
+        },
+        {
+          "factor": "school_proximity",
+          "weight": 4,
+          "level": "高",
+          "score": 66.66666666666666,
+          "contribution": 6.2
+        },
+        {
+          "factor": "purchasing_power",
+          "weight": 3,
+          "level": "中",
+          "score": 48.48864668483197,
+          "contribution": 3.38
+        },
+        {
+          "factor": "business_density",
+          "weight": 3,
+          "level": "中",
+          "score": 37.5,
+          "contribution": 2.62
+        },
+        {
+          "factor": "land_use_mix",
+          "weight": 3,
+          "level": "中",
+          "score": 40.0,
+          "contribution": 2.79
+        },
+        {
+          "factor": "competition",
+          "weight": 3,
+          "level": "中",
+          "score": 100.0,
+          "contribution": 6.98
+        },
+        {
+          "factor": "complementary_anchors",
+          "weight": 3,
+          "level": "中",
+          "score": 95.0,
+          "contribution": 6.63
+        },
+        {
+          "factor": "convenience_density",
+          "weight": 4,
+          "level": "高",
+          "score": 80.0,
+          "contribution": 7.44
+        },
+        {
+          "factor": "accessibility",
+          "weight": 4,
+          "level": "高",
+          "score": 100.0,
+          "contribution": 9.3
+        },
+        {
+          "factor": "redevelopment_stage",
+          "weight": 3,
+          "level": "中",
+          "score": 97.5,
+          "contribution": 6.8
+        },
+        {
+          "factor": "visibility",
+          "weight": 3,
+          "level": "中",
+          "score": 74.0,
+          "contribution": 5.16
+        }
+      ]
+    },
+    "functional_medicine": {
+      "total": 74.14,
+      "rows": [
+        {
+          "factor": "population_density",
+          "weight": 3,
+          "level": "中",
+          "score": 55.6208,
+          "contribution": 4.64
+        },
+        {
+          "factor": "age_gender",
+          "weight": 3,
+          "level": "中",
+          "score": 89.22999999999999,
+          "contribution": 7.44
+        },
+        {
+          "factor": "day_night_gap",
+          "weight": 3,
+          "level": "中",
+          "score": 89.44239771857914,
+          "contribution": 7.45
+        },
+        {
+          "factor": "school_proximity",
+          "weight": 0,
+          "level": "無",
+          "score": 66.66666666666666,
+          "contribution": 0.0
+        },
+        {
+          "factor": "purchasing_power",
+          "weight": 4,
+          "level": "高",
+          "score": 48.48864668483197,
+          "contribution": 5.39
+        },
+        {
+          "factor": "business_density",
+          "weight": 3,
+          "level": "中",
+          "score": 37.5,
+          "contribution": 3.12
+        },
+        {
+          "factor": "land_use_mix",
+          "weight": 3,
+          "level": "中",
+          "score": 40.0,
+          "contribution": 3.33
+        },
+        {
+          "factor": "competition",
+          "weight": 2,
+          "level": "低",
+          "score": 100.0,
+          "contribution": 5.56
+        },
+        {
+          "factor": "complementary_anchors",
+          "weight": 3,
+          "level": "中",
+          "score": 95.0,
+          "contribution": 7.92
+        },
+        {
+          "factor": "convenience_density",
+          "weight": 3,
+          "level": "中",
+          "score": 80.0,
+          "contribution": 6.67
+        },
+        {
+          "factor": "accessibility",
+          "weight": 3,
+          "level": "中",
+          "score": 100.0,
+          "contribution": 8.33
+        },
+        {
+          "factor": "redevelopment_stage",
+          "weight": 3,
+          "level": "中",
+          "score": 97.5,
+          "contribution": 8.12
+        },
+        {
+          "factor": "visibility",
+          "weight": 3,
+          "level": "中",
+          "score": 74.0,
+          "contribution": 6.17
+        }
+      ]
+    },
+    "weight_loss": {
+      "total": 75.19,
+      "rows": [
+        {
+          "factor": "population_density",
+          "weight": 3,
+          "level": "中",
+          "score": 55.6208,
+          "contribution": 3.97
+        },
+        {
+          "factor": "age_gender",
+          "weight": 4,
+          "level": "高",
+          "score": 89.22999999999999,
+          "contribution": 8.5
+        },
+        {
+          "factor": "day_night_gap",
+          "weight": 3,
+          "level": "中",
+          "score": 89.44239771857914,
+          "contribution": 6.39
+        },
+        {
+          "factor": "school_proximity",
+          "weight": 3,
+          "level": "中",
+          "score": 66.66666666666666,
+          "contribution": 4.76
+        },
+        {
+          "factor": "purchasing_power",
+          "weight": 4,
+          "level": "高",
+          "score": 48.48864668483197,
+          "contribution": 4.62
+        },
+        {
+          "factor": "business_density",
+          "weight": 3,
+          "level": "中",
+          "score": 37.5,
+          "contribution": 2.68
+        },
+        {
+          "factor": "land_use_mix",
+          "weight": 3,
+          "level": "中",
+          "score": 40.0,
+          "contribution": 2.86
+        },
+        {
+          "factor": "competition",
+          "weight": 4,
+          "level": "高",
+          "score": 100.0,
+          "contribution": 9.52
+        },
+        {
+          "factor": "complementary_anchors",
+          "weight": 3,
+          "level": "中",
+          "score": 95.0,
+          "contribution": 6.79
+        },
+        {
+          "factor": "convenience_density",
+          "weight": 3,
+          "level": "中",
+          "score": 80.0,
+          "contribution": 5.71
+        },
+        {
+          "factor": "accessibility",
+          "weight": 3,
+          "level": "中",
+          "score": 100.0,
+          "contribution": 7.14
+        },
+        {
+          "factor": "redevelopment_stage",
+          "weight": 3,
+          "level": "中",
+          "score": 97.5,
+          "contribution": 6.96
+        },
+        {
+          "factor": "visibility",
+          "weight": 3,
+          "level": "中",
+          "score": 74.0,
+          "contribution": 5.29
+        }
+      ]
+    },
+    "psychiatry": {
+      "total": 76.19,
+      "rows": [
+        {
+          "factor": "population_density",
+          "weight": 4,
+          "level": "高",
+          "score": 55.6208,
+          "contribution": 5.7
+        },
+        {
+          "factor": "age_gender",
+          "weight": 3,
+          "level": "中",
+          "score": 89.22999999999999,
+          "contribution": 6.86
+        },
+        {
+          "factor": "day_night_gap",
+          "weight": 3,
+          "level": "中",
+          "score": 89.44239771857914,
+          "contribution": 6.88
+        },
+        {
+          "factor": "school_proximity",
+          "weight": 2,
+          "level": "低",
+          "score": 66.66666666666666,
+          "contribution": 3.42
+        },
+        {
+          "factor": "purchasing_power",
+          "weight": 3,
+          "level": "中",
+          "score": 48.48864668483197,
+          "contribution": 3.73
+        },
+        {
+          "factor": "business_density",
+          "weight": 2,
+          "level": "低",
+          "score": 37.5,
+          "contribution": 1.92
+        },
+        {
+          "factor": "land_use_mix",
+          "weight": 3,
+          "level": "中",
+          "score": 40.0,
+          "contribution": 3.08
+        },
+        {
+          "factor": "competition",
+          "weight": 3,
+          "level": "中",
+          "score": 100.0,
+          "contribution": 7.69
+        },
+        {
+          "factor": "complementary_anchors",
+          "weight": 3,
+          "level": "中",
+          "score": 95.0,
+          "contribution": 7.31
+        },
+        {
+          "factor": "convenience_density",
+          "weight": 3,
+          "level": "中",
+          "score": 80.0,
+          "contribution": 6.15
+        },
+        {
+          "factor": "accessibility",
+          "weight": 4,
+          "level": "高",
+          "score": 100.0,
+          "contribution": 10.26
+        },
+        {
+          "factor": "redevelopment_stage",
+          "weight": 3,
+          "level": "中",
+          "score": 97.5,
+          "contribution": 7.5
+        },
+        {
+          "factor": "visibility",
+          "weight": 3,
+          "level": "中",
+          "score": 74.0,
+          "contribution": 5.69
+        }
+      ]
+    },
+    "aesthetics": {
+      "total": 74.42,
+      "rows": [
+        {
+          "factor": "population_density",
+          "weight": 3,
+          "level": "中",
+          "score": 55.6208,
+          "contribution": 3.55
+        },
+        {
+          "factor": "age_gender",
+          "weight": 4,
+          "level": "高",
+          "score": 89.22999999999999,
+          "contribution": 7.59
+        },
+        {
+          "factor": "day_night_gap",
+          "weight": 3,
+          "level": "中",
+          "score": 89.44239771857914,
+          "contribution": 5.71
+        },
+        {
+          "factor": "school_proximity",
+          "weight": 3,
+          "level": "中",
+          "score": 66.66666666666666,
+          "contribution": 4.26
+        },
+        {
+          "factor": "purchasing_power",
+          "weight": 5,
+          "level": "最高",
+          "score": 48.48864668483197,
+          "contribution": 5.16
+        },
+        {
+          "factor": "business_density",
+          "weight": 4,
+          "level": "高",
+          "score": 37.5,
+          "contribution": 3.19
+        },
+        {
+          "factor": "land_use_mix",
+          "weight": 3,
+          "level": "中",
+          "score": 40.0,
+          "contribution": 2.55
+        },
+        {
+          "factor": "competition",
+          "weight": 5,
+          "level": "最高",
+          "score": 100.0,
+          "contribution": 10.64
+        },
+        {
+          "factor": "complementary_anchors",
+          "weight": 3,
+          "level": "中",
+          "score": 95.0,
+          "contribution": 6.06
+        },
+        {
+          "factor": "convenience_density",
+          "weight": 4,
+          "level": "高",
+          "score": 80.0,
+          "contribution": 6.81
+        },
+        {
+          "factor": "accessibility",
+          "weight": 3,
+          "level": "中",
+          "score": 100.0,
+          "contribution": 6.38
+        },
+        {
+          "factor": "redevelopment_stage",
+          "weight": 3,
+          "level": "中",
+          "score": 97.5,
+          "contribution": 6.22
+        },
+        {
+          "factor": "visibility",
+          "weight": 4,
+          "level": "高",
+          "score": 74.0,
+          "contribution": 6.3
+        }
+      ]
+    }
+  }
+}

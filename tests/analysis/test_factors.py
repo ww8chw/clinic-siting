@@ -7,6 +7,7 @@ from clinic_siting.analysis.factors import (
     best_road_visibility,
     age_gender_score,
     day_night_score,
+    school_proximity_score,
 )
 
 # 龜山量級的完整 raw 輸入
@@ -24,10 +25,10 @@ FULL_RAW = {
 }
 
 
-def test_build_factors_covers_all_twelve():
+def test_build_factors_covers_all_thirteen():
     f = build_factors(FULL_RAW)
     assert set(f.keys()) == set(ALL_FACTORS)
-    assert len(ALL_FACTORS) == 12
+    assert len(ALL_FACTORS) == 13
     for r in f.values():
         assert isinstance(r, FactorResult)
         assert 0.0 <= r.score <= 100.0
@@ -198,5 +199,25 @@ def test_day_night_factor_real_when_ratio_present():
 
 def test_day_night_missing_without_ratio():
     f = build_factors(FULL_RAW)["day_night_gap"]
+    assert f.source == "missing"
+    assert f.score == 50.0
+
+
+def test_school_proximity_more_schools_scores_higher():
+    # 步行範圍內學校越多 → 日間人流/年輕家庭客群越強 → 分數越高
+    assert school_proximity_score(2) > school_proximity_score(0)
+    assert school_proximity_score(1) > school_proximity_score(0)
+    assert 0.0 <= school_proximity_score(5) <= 100.0
+
+
+def test_school_proximity_factor_real_when_count_present():
+    raw = dict(FULL_RAW, school_count=1)
+    f = build_factors(raw)["school_proximity"]
+    assert f.source == "real"
+    assert f.score > 0.0
+
+
+def test_school_proximity_missing_without_count():
+    f = build_factors(FULL_RAW)["school_proximity"]
     assert f.source == "missing"
     assert f.score == 50.0

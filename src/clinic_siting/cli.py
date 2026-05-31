@@ -9,6 +9,7 @@ SAMPLE_FACTORS = {
     "population_density": 75.0,
     "age_gender": 70.0,
     "day_night_gap": 60.0,
+    "school_proximity": 65.0,
     "purchasing_power": 80.0,
     "business_density": 65.0,
     "land_use_mix": 60.0,

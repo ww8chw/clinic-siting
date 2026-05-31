@@ -6,11 +6,12 @@ from dataclasses import dataclass
 from clinic_siting.analysis.aggregate import WALK_KM, DRIVE_KM, COMPETITION_FLOOR
 from clinic_siting.scoring.normalize import minmax_score
 
-# 12 因子（順序對齊 config/specialties.yaml）
+# 13 因子（順序對齊 config/specialties.yaml）
 ALL_FACTORS = [
     "population_density",
     "age_gender",
     "day_night_gap",
+    "school_proximity",
     "purchasing_power",
     "business_density",
     "land_use_mix",
@@ -42,6 +43,10 @@ AGE_PRIME_WEIGHT = 0.7                         # 壯年:女性 = 7:3
 
 # 晝夜落差：營業家數每千人相對全國比值，越接近 1（日夜均衡）越佳
 DAYNIGHT_K = 70.0                              # 每偏離 |ln(比值)| 的扣分係數
+
+# 學校鄰近：步行 1km 內學校數（日間人流/年輕家庭客群代理）
+# 加成型：無學校為中性（非懲罰），每多 1 所往上加，達上限給滿分
+SCHOOL_BONUS_CAP = 3                           # 3 所（含）以上 → 滿分 100
 
 # 競爭需求/供給校準
 VISIT_RATE = 0.02                              # 人口 → 月就診需求代理係數
@@ -122,6 +127,13 @@ def day_night_score(ratio: float) -> float:
     return max(0.0, min(100.0, score))
 
 
+def school_proximity_score(count: float) -> float:
+    """步行範圍內學校數 → 分數。加成型：無學校為中性 50（非懲罰），
+    每多 1 所往 100 加，達 SCHOOL_BONUS_CAP 給滿分。"""
+    bonus = min(count, SCHOOL_BONUS_CAP) / SCHOOL_BONUS_CAP
+    return NEUTRAL + bonus * (100.0 - NEUTRAL)
+
+
 def build_factors(raw: dict) -> dict[str, FactorResult]:
     """原始值 → 12 因子 FactorResult（已處理負向語意，分數一律高=佳）。"""
     out: dict[str, FactorResult] = {}
@@ -196,6 +208,12 @@ def build_factors(raw: dict) -> dict[str, FactorResult]:
             day_night_score(raw["business_ratio"]), "real")
     else:
         out["day_night_gap"] = FactorResult(NEUTRAL, "missing")
+
+    # 學校鄰近：步行 1km 內學校數（OSM amenity=school）
+    out["school_proximity"] = real_or_missing(
+        "school_count",
+        school_proximity_score,
+    )
 
     # 能見度：OSM 臨街道路等級代理；無道路資料 → 手動中性
     roads = raw.get("roads")
@@ -338,6 +356,13 @@ def factor_explanation(name: str, raw: dict) -> dict:
         return {
             "raw": f"營業家數每千人為全國 {ratio:.2f} 倍（{lean}）",
             "basis": "比值=1 日夜最均衡得分最高；偏離以 |ln(比值)| 線性扣分",
+        }
+    if name == "school_proximity":
+        v = g("school_count")
+        return {
+            "raw": f"步行 1km 內學校 {v} 所" if v is not None else "無資料",
+            "basis": (f"加成型：無學校中性 50，每多 1 所往上加，{SCHOOL_BONUS_CAP} 所滿分"
+                      f"（OSM amenity=school，日間人流/年輕家庭代理）"),
         }
     if name == "redevelopment_stage":
         v = g("building_age_median")

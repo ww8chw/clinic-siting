@@ -1,0 +1,72 @@
+name: Refresh & Deploy
+
+# 定期自動更新機制：每月重新抓資料、算分、重建網站並部署到 GitHub Pages。
+# - schedule：每月 1 日自動刷新（雲端執行，不需本機開機）
+# - workflow_dispatch：可在 Actions 頁手動觸發
+# - push：site/ 內容變動時自動重新部署
+on:
+  schedule:
+    - cron: "0 0 1 * *"   # 每月 1 日 00:00 UTC（台北 08:00）
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/**"
+
+permissions:
+  contents: write   # 刷新後把更新的快照/資料 commit 回 repo
+  pages: write
+  id-token: write
+
+# 避免多次部署互相覆蓋
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  refresh-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      # 排程/手動才重新抓資料；單純 push 只重新部署現有 site/
+      # Google/TDX 金鑰若有設為 repository secrets 則用之，否則該因子沿用上次快照值（degraded）
+      - name: Refresh data
+        if: github.event_name != 'push'
+        env:
+          PYTHONPATH: src
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          TDX_CLIENT_ID: ${{ secrets.TDX_CLIENT_ID }}
+          TDX_CLIENT_SECRET: ${{ secrets.TDX_CLIENT_SECRET }}
+        run: python -m clinic_siting
+
+      - name: Commit refreshed data
+        if: github.event_name != 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A site/data history.jsonl
+          if git diff --cached --quiet; then
+            echo "無資料變動，略過 commit"
+          else
+            git commit -m "data: 月度自動刷新 $(date +%F) [skip ci]"
+            git push
+          fi
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4

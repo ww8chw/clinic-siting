@@ -9,6 +9,7 @@ factors:
   - population_density       # 總人口/密度
   - age_gender               # 25–45歲/女性比
   - day_night_gap            # 晝夜人口落差
+  - school_proximity         # 學校鄰近（日間人流/年輕家庭）
   - purchasing_power         # 消費力
   - business_density         # 商業活動密度
   - land_use_mix             # 土地使用混合
@@ -27,6 +28,7 @@ specialties:
     population_density: 高
     age_gender: 中
     day_night_gap: 中
+    school_proximity: 高
     purchasing_power: 中
     business_density: 中
     land_use_mix: 中
@@ -40,6 +42,7 @@ specialties:
     population_density: 中
     age_gender: 中
     day_night_gap: 中
+    school_proximity: 無
     purchasing_power: 高
     business_density: 中
     land_use_mix: 中
@@ -53,6 +56,7 @@ specialties:
     population_density: 中
     age_gender: 高
     day_night_gap: 中
+    school_proximity: 中
     purchasing_power: 高
     business_density: 中
     land_use_mix: 中
@@ -66,6 +70,7 @@ specialties:
     population_density: 高
     age_gender: 中
     day_night_gap: 中
+    school_proximity: 低
     purchasing_power: 中
     business_density: 低
     land_use_mix: 中
@@ -79,6 +84,7 @@ specialties:
     population_density: 中
     age_gender: 高
     day_night_gap: 中
+    school_proximity: 中
     purchasing_power: 最高
     business_density: 高
     land_use_mix: 中

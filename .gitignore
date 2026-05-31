@@ -10,4 +10,6 @@ data/reference/*
 !data/reference/*.csv
 *.egg-info/
 data/*.jsonl
-site/data/*.json
+logs/
+
+# site/data/*.json 為 GitHub Pages 要發佈的資料，需入版控（故不忽略）
