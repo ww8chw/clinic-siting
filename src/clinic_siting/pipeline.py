@@ -103,7 +103,12 @@ def collect_live(center: tuple[float, float]) -> tuple[dict, dict]:
             resp = google_places.fetch_search_nearby(
                 ["pharmacy", "hospital"], center[0], center[1], _DRIVE_M, google_key)
             anchors = _points(google_places.parse_places(resp))
+            for a in anchors:
+                a["dist_km"] = round(
+                    haversine_km(center[0], center[1], a["lat"], a["lon"]), 2)
             raw["anchor_count"] = count_within(center, anchors, DRIVE_KM)
+            raw["anchor_weighted"] = round(
+                weighted_count_within(center, anchors, DRIVE_KM), 2)
             geo["anchors"] = anchors
         except Exception:
             pass

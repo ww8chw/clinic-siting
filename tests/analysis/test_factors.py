@@ -58,6 +58,16 @@ def test_missing_online_keys_degrade_to_neutral():
     assert f["purchasing_power"].source == "real"
 
 
+def test_anchors_use_weighted_effective_count():
+    # 互補錨點越近綜效越強：加權有效家數較低 → 分數較低
+    base = dict(FULL_RAW, anchor_count=10)
+    weighted = dict(base, anchor_weighted=4.0)
+    s_raw = build_factors(base)["complementary_anchors"].score
+    s_w = build_factors(weighted)["complementary_anchors"].score
+    assert s_w < s_raw
+    assert build_factors(weighted)["complementary_anchors"].source == "real"
+
+
 def test_competition_uses_weighted_effective_count():
     # 同樣 10 家，但距離加權後有效家數僅 4 → 競爭較輕、分數較高
     base = dict(FULL_RAW, competition_count=10)

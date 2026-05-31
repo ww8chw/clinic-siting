@@ -26,7 +26,7 @@ NEUTRAL = 50.0
 # 校準門檻（以龜山量級設定 lo/hi）
 INCOME_LO, INCOME_HI = 350.0, 800.0          # 戶中位所得（千元）
 POP_LO, POP_HI = 50_000.0, 300_000.0          # 區級人口
-ANCHOR_LO, ANCHOR_HI = 0.0, 20.0              # 互補錨點家數
+ANCHOR_LO, ANCHOR_HI = 0.0, 10.0              # 互補錨點距離加權有效家數
 CONVENIENCE_LO, CONVENIENCE_HI = 0.0, 25.0    # 便利商店家數（步行 1km）
 BUSINESS_LO, BUSINESS_HI = 0.0, 40.0          # 商業 POI 計數（餐飲代理，步行 1km）
 LANDUSE_LO, LANDUSE_HI = 1.0, 6.0             # 土地使用類型數
@@ -128,10 +128,15 @@ def build_factors(raw: dict) -> dict[str, FactorResult]:
     else:
         out["competition"] = FactorResult(NEUTRAL, "missing")
 
-    out["complementary_anchors"] = real_or_missing(
-        "anchor_count",
-        lambda v: minmax_score(v, ANCHOR_LO, ANCHOR_HI),
-    )
+    # 互補錨點：優先用距離加權有效家數（近者綜效強）；無則退回原始家數
+    anchor = raw.get("anchor_weighted")
+    if anchor is None:
+        anchor = raw.get("anchor_count")
+    if anchor is not None:
+        out["complementary_anchors"] = FactorResult(
+            minmax_score(anchor, ANCHOR_LO, ANCHOR_HI), "real")
+    else:
+        out["complementary_anchors"] = FactorResult(NEUTRAL, "missing")
     out["convenience_density"] = real_or_missing(
         "convenience_count",
         lambda v: minmax_score(v, CONVENIENCE_LO, CONVENIENCE_HI),
@@ -225,9 +230,15 @@ def factor_explanation(name: str, raw: dict) -> dict:
         }
     if name == "complementary_anchors":
         v = g("anchor_count")
+        if v is None:
+            return {"raw": "無資料", "basis": "沿用上次快照值或中性 50"}
+        w = g("anchor_weighted")
+        eff_txt = f"（距離加權有效 {w:.1f} 家）" if w is not None else ""
         return {
-            "raw": f"3km 內藥局/醫院 {v} 家" if v is not None else "無資料",
-            "basis": f"線性映射 {ANCHOR_LO:.0f}–{ANCHOR_HI:.0f} 家 → 0–100",
+            "raw": f"3km 內藥局/醫院 {v} 家{eff_txt}",
+            "basis": (f"近者綜效強：步行 {WALK_KM:.0f}km 內權重 1.0，至車程 "
+                      f"{DRIVE_KM:.0f}km 線性衰減至 {COMPETITION_FLOOR}；有效家數映射 "
+                      f"{ANCHOR_LO:.0f}–{ANCHOR_HI:.0f} → 0–100"),
         }
     if name == "convenience_density":
         v = g("convenience_count")
