@@ -213,6 +213,39 @@ function renderClinicList(geo) {
   }).join("");
 }
 
+// 3km 內互補錨點清單（藥局／醫院；名稱／地址／距離／綜效權重／評分），近者在前
+function renderAnchorList(geo) {
+  const tbody = document.querySelector("#anchor-table tbody");
+  const countEl = document.getElementById("anchor-count");
+  const anchors = (geo.anchors || []).slice();
+  if (countEl) countEl.textContent = String(anchors.length);
+  if (!tbody) return;
+  if (!anchors.length) {
+    tbody.innerHTML = "<tr><td colspan='5'>尚無資料</td></tr>";
+    return;
+  }
+  // 距離越近綜效越強 → 近者在前（無距離者排最後）
+  anchors.sort((a, b) =>
+    (a.dist_km == null ? Infinity : a.dist_km) -
+    (b.dist_km == null ? Infinity : b.dist_km));
+  tbody.innerHTML = anchors.map(c => {
+    const rating = c.rating == null ? "—" :
+      `${fmt(c.rating)}${c.rating_count ? `（${c.rating_count}）` : ""}`;
+    const dist = c.dist_km == null ? "—" :
+      `<span style="white-space:nowrap">${c.dist_km.toFixed(2)} km</span>`;
+    const w = proximityWeight(c.dist_km);
+    const wTxt = w == null ? "—" :
+      `<span class="contrib-bar"><span style="width:${(w * 100).toFixed(0)}%"></span></span>${w.toFixed(2)}`;
+    return `<tr>
+      <td>${c.name || "—"}</td>
+      <td class="addr">${c.address || "—"}</td>
+      <td>${dist}</td>
+      <td>${wTxt}</td>
+      <td>${rating}</td>
+    </tr>`;
+  }).join("");
+}
+
 function renderTrend(payload) {
   const trend = payload.trend || { dates: [], specialties: {} };
   const ctx = document.getElementById("trendChart");
@@ -277,6 +310,7 @@ async function main() {
   renderTrend(payload);
   renderMap(payload, geo);
   renderClinicList(geo);
+  renderAnchorList(geo);
 }
 
 main();
