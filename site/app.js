@@ -342,28 +342,42 @@ function renderMap(payload, geo) {
     transit: { color: "#0891b2", label: "公車站" },
     schools: { color: "#65a30d", label: "學校" },
   };
+  // 每類別包成獨立圖層，方便由圖例點擊切換顯示/隱藏
+  const layers = {};
   Object.entries(groups).forEach(([key, cfg]) => {
+    const lg = L.layerGroup();
     (geo[key] || []).forEach(p => {
       if (p.lat == null || p.lon == null) return;
       L.circleMarker([p.lat, p.lon], { radius: 5, color: cfg.color, fillOpacity: 0.7 })
-        .addTo(map).bindPopup(`${cfg.label}${p.name ? "：" + p.name : ""}`);
+        .bindPopup(`${cfg.label}${p.name ? "：" + p.name : ""}`)
+        .addTo(lg);
     });
+    lg.addTo(map);
+    layers[key] = lg;
   });
 
-  // 圖例：說明各色點點與範圍圈的類別
+  // 圖例：說明各色點點與範圍圈的類別；點類別列可切換該類別顯示
   const legend = L.control({ position: "bottomright" });
   legend.onAdd = function () {
     const div = L.DomUtil.create("div", "map-legend");
-    const dot = (color, count) =>
-      `<span class="lg-dot" style="background:${color}"></span>`;
-    const items = [
-      `<span class="lg-pin">📍</span>候選點`,
-      ...Object.entries(groups).map(([key, cfg]) =>
-        `${dot(cfg.color)}${cfg.label}（${(geo[key] || []).length}）`),
-      `<span class="lg-line" style="border-color:#2563eb"></span>步行 1km`,
-      `<span class="lg-line" style="border-color:#16a34a"></span>車程 3km`,
-    ];
-    div.innerHTML = items.map(t => `<div class="lg-row">${t}</div>`).join("");
+    L.DomEvent.disableClickPropagation(div);
+    const head = `<div class="lg-row"><span class="lg-pin">📍</span>候選點</div>`;
+    const groupRows = Object.entries(groups).map(([key, cfg]) =>
+      `<div class="lg-row lg-toggle" data-key="${key}" title="點擊隱藏/顯示">` +
+      `<span class="lg-dot" style="background:${cfg.color}"></span>` +
+      `${cfg.label}（${(geo[key] || []).length}）</div>`).join("");
+    const lines =
+      `<div class="lg-row"><span class="lg-line" style="border-color:#2563eb"></span>步行 1km</div>` +
+      `<div class="lg-row"><span class="lg-line" style="border-color:#16a34a"></span>車程 3km</div>`;
+    div.innerHTML = head + groupRows + lines;
+    div.querySelectorAll(".lg-toggle").forEach(row => {
+      row.addEventListener("click", () => {
+        const lg = layers[row.getAttribute("data-key")];
+        if (!lg) return;
+        if (map.hasLayer(lg)) { map.removeLayer(lg); row.classList.add("lg-off"); }
+        else { lg.addTo(map); row.classList.remove("lg-off"); }
+      });
+    });
     return div;
   };
   legend.addTo(map);

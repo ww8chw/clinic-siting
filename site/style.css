@@ -141,6 +141,9 @@ td.addr { color: var(--muted); font-size: 0.82rem; max-width: 360px; }
   color: #1f2937;
 }
 .map-legend .lg-row { display: flex; align-items: center; }
+.map-legend .lg-toggle { cursor: pointer; user-select: none; }
+.map-legend .lg-toggle:hover { background: rgba(0, 0, 0, 0.05); border-radius: 4px; }
+.map-legend .lg-off { opacity: 0.4; text-decoration: line-through; }
 .map-legend .lg-dot {
   display: inline-block; width: 11px; height: 11px;
   border-radius: 50%; margin-right: 6px; flex: none;
