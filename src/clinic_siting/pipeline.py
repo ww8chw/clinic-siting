@@ -5,7 +5,9 @@ from pathlib import Path
 
 from clinic_siting.analysis.aggregate import (
     WALK_KM, DRIVE_KM, count_within, weighted_count_within)
+from clinic_siting.analysis.competition import classify_place
 from clinic_siting.geo.distance import haversine_km
+from clinic_siting.geo.grid import tile_centers
 from clinic_siting.analysis.factors import build_factors, factor_scores
 from clinic_siting.data_sources import (
     env,
@@ -37,6 +39,51 @@ NATIONAL_POP = 23_400_000        # 全國人口（晝夜比值正規化基準）
 _WALK_M = int(WALK_KM * 1000)
 _DRIVE_M = int(DRIVE_KM * 1000)
 _VISIBILITY_M = 150          # 能見度只看店面臨街範圍
+
+# 競爭掃描：分區網格突破 Google searchNearby 單次 20 筆上限
+# 廣納各型別後以 classify_place 分流（台灣診所多為 medical_clinic，僅查 doctor 會漏）
+_COMP_TYPES = ["doctor", "medical_clinic", "dentist", "beauty_salon", "spa",
+               "skin_care_clinic", "hospital", "nail_salon", "hair_care",
+               "wellness_center"]
+_COMP_STEP_KM = 1.2          # 網格間距
+_COMP_SUB_M = 900            # 每格子查詢半徑（略大於半格對角，確保不漏）
+
+
+def _scan_competitors(center: tuple[float, float], api_key: str):
+    """分區網格掃描 3km 內競爭點位，依座標去重後分流成 (western, aesthetic)。
+
+    western＝西醫一般診所（家醫/功能/減重/精神競爭池）；
+    aesthetic＝醫美/美容（醫美科競爭池）。牙醫/中醫/醫院/其他不計入競爭。"""
+    seen: dict = {}
+    for la, lo in tile_centers(center, DRIVE_KM, _COMP_STEP_KM):
+        try:
+            resp = google_places.fetch_search_nearby(
+                _COMP_TYPES, la, lo, _COMP_SUB_M, api_key)
+        except Exception:
+            continue
+        for p in google_places.parse_places(resp):
+            if not (p.lat and p.lon):
+                continue
+            d = haversine_km(center[0], center[1], p.lat, p.lon)
+            if d > DRIVE_KM:
+                continue
+            seen[(round(p.lat, 5), round(p.lon, 5))] = (
+                p, round(d, 2), classify_place(p.name, p.types))
+
+    western: list[dict] = []
+    aesthetic: list[dict] = []
+    for p, d, cat in seen.values():
+        pt = {"lat": p.lat, "lon": p.lon, "name": p.name, "dist_km": d}
+        if getattr(p, "address", ""):
+            pt["address"] = p.address
+        if getattr(p, "rating", None) is not None:
+            pt["rating"] = p.rating
+            pt["rating_count"] = getattr(p, "rating_count", None)
+        if cat == "western":
+            western.append(pt)
+        elif cat == "aesthetic":
+            aesthetic.append(pt)
+    return western, aesthetic
 
 
 def collect_offline(reference_dir,
@@ -90,17 +137,17 @@ def collect_live(center: tuple[float, float]) -> tuple[dict, dict]:
 
     if google_key:
         try:
-            # nearby + locationRestriction → 嚴格限制在半徑內，計數較準
-            resp = google_places.fetch_search_nearby(
-                ["doctor"], center[0], center[1], _DRIVE_M, google_key)
-            clinics = _points(google_places.parse_places(resp))
-            for c in clinics:
-                c["dist_km"] = round(
-                    haversine_km(center[0], center[1], c["lat"], c["lon"]), 2)
-            raw["competition_count"] = count_within(center, clinics, DRIVE_KM)
+            # 分區網格掃描＋分類，分別算西醫一般診所與醫美/美容競爭
+            western, aesthetic = _scan_competitors(center, google_key)
+            raw["competition_count"] = count_within(center, western, DRIVE_KM)
             raw["competition_weighted"] = round(
-                weighted_count_within(center, clinics, DRIVE_KM), 2)
-            geo["clinics"] = clinics
+                weighted_count_within(center, western, DRIVE_KM), 2)
+            raw["competition_aesthetic_count"] = count_within(
+                center, aesthetic, DRIVE_KM)
+            raw["competition_aesthetic_weighted"] = round(
+                weighted_count_within(center, aesthetic, DRIVE_KM), 2)
+            geo["clinics"] = western
+            geo["aesthetic"] = aesthetic
         except Exception:
             pass
         try:

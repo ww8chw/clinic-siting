@@ -78,6 +78,26 @@ td.basis { color: var(--muted); font-size: 0.82rem; max-width: 320px; }
 tr.muted td { color: var(--missing); }
 .wnum { color: var(--muted); font-size: 0.78rem; margin-left: 0.2rem; }
 
+/* what-if 權重滑桿 */
+td.wcell { white-space: nowrap; }
+td.wcell .wslider { vertical-align: middle; width: 84px; max-width: 40vw; accent-color: var(--accent); cursor: pointer; }
+.wlevel { margin-left: 0.4rem; font-size: 0.85rem; }
+.reset-btn {
+  margin-left: 0.6rem; font-size: 0.85rem; padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line); border-radius: 8px; background: #fff; cursor: pointer;
+}
+.reset-btn:disabled { opacity: 0.45; cursor: default; }
+tfoot th .up { color: var(--real); }
+tfoot th .down { color: #dc2626; }
+
+/* 資料新鮮度徽章 */
+.freshness {
+  display: inline-block; font-size: 0.82rem; padding: 0.2rem 0.6rem;
+  border-radius: 999px; margin-top: 0.3rem;
+}
+.freshness.fresh { background: #dcfce7; color: #166534; }
+.freshness.stale { background: #fee2e2; color: #991b1b; font-weight: 600; }
+
 /* 貢獻長條（內嵌於儲存格） */
 .contrib-bar {
   display: inline-block; vertical-align: middle;

@@ -13,7 +13,8 @@ factors:
   - purchasing_power         # 消費力
   - business_density         # 商業活動密度
   - land_use_mix             # 土地使用混合
-  - competition              # 同科別競爭（負向）
+  - competition              # 西醫一般診所競爭（負向）
+  - competition_aesthetic    # 醫美/美容競爭（負向，醫美科專用）
   - complementary_anchors    # 互補錨點加權
   - convenience_density      # 便利超商密度
   - accessibility            # 交通/停車可及
@@ -22,6 +23,7 @@ factors:
 
 negative_factors:
   - competition
+  - competition_aesthetic
 
 specialties:
   family_medicine:
@@ -33,6 +35,7 @@ specialties:
     business_density: 中
     land_use_mix: 中
     competition: 中
+    competition_aesthetic: 無
     complementary_anchors: 中
     convenience_density: 高
     accessibility: 高
@@ -47,6 +50,7 @@ specialties:
     business_density: 中
     land_use_mix: 中
     competition: 低
+    competition_aesthetic: 無
     complementary_anchors: 中
     convenience_density: 中
     accessibility: 中
@@ -61,6 +65,7 @@ specialties:
     business_density: 中
     land_use_mix: 中
     competition: 高
+    competition_aesthetic: 無
     complementary_anchors: 中
     convenience_density: 中
     accessibility: 中
@@ -75,6 +80,7 @@ specialties:
     business_density: 低
     land_use_mix: 中
     competition: 中
+    competition_aesthetic: 無
     complementary_anchors: 中
     convenience_density: 中
     accessibility: 高
@@ -88,7 +94,8 @@ specialties:
     purchasing_power: 最高
     business_density: 高
     land_use_mix: 中
-    competition: 最高
+    competition: 無
+    competition_aesthetic: 最高
     complementary_anchors: 中
     convenience_density: 高
     accessibility: 中

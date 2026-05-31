@@ -14,6 +14,7 @@ SAMPLE_FACTORS = {
     "business_density": 65.0,
     "land_use_mix": 60.0,
     "competition": 55.0,
+    "competition_aesthetic": 45.0,
     "complementary_anchors": 60.0,
     "convenience_density": 85.0,
     "accessibility": 70.0,

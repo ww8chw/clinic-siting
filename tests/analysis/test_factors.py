@@ -25,10 +25,10 @@ FULL_RAW = {
 }
 
 
-def test_build_factors_covers_all_thirteen():
+def test_build_factors_covers_all_fourteen():
     f = build_factors(FULL_RAW)
     assert set(f.keys()) == set(ALL_FACTORS)
-    assert len(ALL_FACTORS) == 13
+    assert len(ALL_FACTORS) == 14
     for r in f.values():
         assert isinstance(r, FactorResult)
         assert 0.0 <= r.score <= 100.0
@@ -87,6 +87,28 @@ def test_competition_cluster_beats_oversaturation():
     c = build_factors(cluster)["competition"].score
     o = build_factors(oversat)["competition"].score
     assert c > o
+
+
+def test_competition_aesthetic_real_when_count_present():
+    raw = dict(FULL_RAW, competition_aesthetic_count=40)
+    f = build_factors(raw)["competition_aesthetic"]
+    assert f.source == "real"
+    assert 0.0 <= f.score <= 100.0
+
+
+def test_competition_aesthetic_missing_without_count():
+    f = build_factors(FULL_RAW)["competition_aesthetic"]
+    assert f.source == "missing"
+    assert f.score == 50.0
+
+
+def test_competition_aesthetic_uses_weighted_effective_count():
+    base = dict(FULL_RAW, competition_aesthetic_count=20)
+    weighted = dict(base, competition_aesthetic_weighted=8.0)
+    s_raw = build_factors(base)["competition_aesthetic"].score
+    s_w = build_factors(weighted)["competition_aesthetic"].score
+    # 加權後有效家數較少 → 競爭較輕 → 分數較高
+    assert s_w > s_raw
 
 
 def test_factor_scores_returns_plain_floats():

@@ -32,7 +32,7 @@ def test_run_pipeline_offline_outputs_full_snapshot(tmp_path):
     hist = tmp_path / "history.jsonl"
     snap = run_pipeline(ref, hist, CONFIG, live=False)
     assert set(snap["scores"].keys()) == SPECIALTIES
-    assert len(snap["factors"]) == 13
+    assert len(snap["factors"]) == 14
     assert "weighted_median_income" in snap["raw"]
     # 離線時線上因子缺漏 → 標 missing/中性
     assert snap["factors"]["competition"]["source"] == "missing"

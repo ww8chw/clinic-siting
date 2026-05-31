@@ -1,20 +1,21 @@
-# Plan 5 — 月度排程 + 常駐網站 Implementation Plan
+# Plan 5 — 公開網站 + 月度自動更新 Implementation Plan
 
-> **For agentic workers:** 用 TDD 逐步實作；編排層薄、純函式先測，外部 IO（launchd）以腳本隔離。
+> **For agentic workers:** 用 TDD 逐步實作；編排層薄、純函式先測，部署與排程交給 GitHub Actions。
 
-**Goal:** 把已完成的抓取→算分→快照→靜態站（Plan 1–4）串成單一可排程的刷新指令，並用常駐本機伺服器把網站固定在一個可隨時點進去看的網址（http://localhost:8080），對應設計規格 §4 資料流步驟 1、4。
+**Goal:** 把已完成的抓取→算分→快照→靜態站（Plan 1–4）串成單一刷新指令，公開託管於 GitHub Pages，並由 GitHub Actions 每月雲端自動刷新資料、重建並重新部署網站（不需本機開機）。對應設計規格 §4 資料流步驟 1、4，並以「隨時可看的公開網址」取代原 §4 步驟 5 的寄信通知。
 
 **Architecture:**
-- `runner.py`：`run_refresh()` 編排——呼叫 `run_pipeline(live=True, site_dir=site)` 抓取算分寫快照並重建站台；`main()` 印出本月排名。
-- `__main__.py`：`python -m clinic_siting` 進入點。
-- `deploy/`：兩個 LaunchAgent ＋ 一支安裝腳本
-  - `com.chenhungwen.clinic-siting.plist`：每月 1 號 03:00 觸發刷新。
-  - `com.chenhungwen.clinic-siting.serve.plist`：常駐 `python -m http.server 8080 --directory site`，開機即起、掛掉自動重啟。
-  - `install-schedule.sh {install|uninstall|run|status}`：一次安裝/卸載兩個服務。
+- `runner.py` + `__main__.py`：`python -m clinic_siting` = `run_pipeline(live=True, site_dir=site)`，抓取算分寫快照重建站，印出本月排名。供本機手動執行與 CI 共用。
+- `data_sources/env.py`：`get_key` 改為「環境變數優先、其次本地 .env」，讓 GitHub Actions secrets 與本機 .env 都能供金鑰。
+- `.github/workflows/refresh-and-deploy.yml`：
+  - `schedule` 每月 1 日 cron 觸發刷新（雲端）；`workflow_dispatch` 手動；`push`（site/ 變動）只重新部署。
+  - 刷新後把 `site/data/*.json` 與 `history.jsonl` commit 回 repo（commit 訊息帶 `[skip ci]` 避免迴圈），再用官方 Pages actions 部署 `site/`。
+  - 金鑰缺漏時 Google/TDX 因子由 `fill_degraded` 沿用上次快照的真值（首次種子由本機 live 跑產生並入版控）。
+- `.gitignore`：`site/data/*.json` 改為入版控（Pages 要發佈的資料）；`logs/`、`.env` 忽略。
 
-**Tech Stack:** Python 3.9（`from __future__ import annotations`）、pytest、Python stdlib `http.server`、macOS launchd。
+**Tech Stack:** Python 3.9（執行）／3.11（CI）、pytest、GitHub Actions、GitHub Pages。
 
-> 設計演進：原規格 §4 步驟 5 的「n8n 寄信通知」經使用者確認改為**不寄信**，改以常駐網站隨時查看取代，故移除 notify 模組。
+> 設計演進：原規格 §4 步驟 5 的「n8n 寄信通知」經使用者確認改為**不寄信、改公開網站隨時看**；部署機制由「本機 launchd 常駐伺服器」進一步改為「GitHub Pages + Actions 雲端月度刷新」，使更新不依賴本機開機。
 
 ---
 
@@ -29,32 +30,39 @@
 - `main()`：`run_refresh()` 後印排名；`__main__.py` 呼叫 `main()`。
 - 測試（離線決定性）：離線建站並回傳 5 科別 snapshot、落檔 history.json/geo.json；連跑兩次各追加一筆快照。
 
-## Task 2: deploy/ — launchd 月度排程 + 常駐網站
+## Task 2: env.py — 環境變數優先
 
 **Files:**
-- Create: `deploy/com.chenhungwen.clinic-siting.plist`（refresh）
-- Create: `deploy/com.chenhungwen.clinic-siting.serve.plist`（serve）
-- Create: `deploy/install-schedule.sh`
+- Modify: `src/clinic_siting/data_sources/env.py`
 
-- refresh plist：`StartCalendarInterval` Day=1 Hour=3 Minute=0；`WorkingDirectory` 與 `PYTHONPATH=…/src`；`ProgramArguments` 為 `.venv/bin/python -m clinic_siting`；stdout/stderr 導向 `logs/`。
-- serve plist：`ProgramArguments` 為 `.venv/bin/python -m http.server 8080 --directory …/site`；`RunAtLoad`＋`KeepAlive` 為 true；log 導向 `logs/`。
-- `install-schedule.sh`：複製兩個 plist 至 `~/Library/LaunchAgents` 並 `launchctl load`／`unload`／`start`／`list`。
+- `get_key(name)`：`os.environ.get(name) or load_env().get(name)`，使 CI secrets 與本機 .env 皆可用，且本機行為不變。
+
+## Task 3: GitHub Actions — 月度刷新 + Pages 部署
+
+**Files:**
+- Create: `.github/workflows/refresh-and-deploy.yml`
+- Modify: `.gitignore`（`site/data/*.json` 入版控、忽略 `logs/`）
+
+- 觸發：`schedule`（每月）、`workflow_dispatch`、`push`（site/ 變動只部署）。
+- 權限：`contents: write`（commit 回刷新資料）、`pages: write`、`id-token: write`；`concurrency: pages`。
+- 步驟：checkout → setup-python 3.11 → pip install → （非 push 才）`python -m clinic_siting` 刷新 → commit `site/data`+`history.jsonl`（`[skip ci]`）→ `configure-pages`/`upload-pages-artifact(path: site)`/`deploy-pages`。
 
 ---
 
-## 安裝與驗證
+## 部署與驗證
 
 ```bash
-# 手動跑一次（live 抓取 + 重建站）
+# 本機手動刷新（用 .env 的金鑰，產生高品質種子資料）
 PYTHONPATH=src .venv/bin/python -m clinic_siting
 
-# 安裝（每月排程 + 常駐網站）
-./deploy/install-schedule.sh install
-# 開瀏覽器看網站
-open http://localhost:8080
-# 立即手動刷新驗證（輸出見 logs/refresh.out.log）
-./deploy/install-schedule.sh run
-# 查看載入狀態 / 卸載
-./deploy/install-schedule.sh status
-./deploy/install-schedule.sh uninstall
+# 建立公開 repo 並推送
+gh repo create clinic-siting --public --source=. --remote=origin --push
+
+# 啟用 Pages（來源＝GitHub Actions）
+gh api -X POST repos/{owner}/clinic-siting/pages -f build_type=workflow
+
+# 之後：每月 1 日 Actions 自動刷新並重新部署；亦可在 Actions 頁手動 Run。
 ```
+
+## 可選強化
+- 在 repo Settings → Secrets 加入 `GOOGLE_MAPS_API_KEY`、`TDX_CLIENT_ID`、`TDX_CLIENT_SECRET`，讓雲端刷新也能抓即時競爭/交通資料（否則沿用本機種子的 degraded 值）。

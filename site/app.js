@@ -17,7 +17,8 @@ const FACTOR_LABELS = {
   purchasing_power: "消費力",
   business_density: "商業密度",
   land_use_mix: "土地混合",
-  competition: "同業競爭",
+  competition: "西醫診所競爭",
+  competition_aesthetic: "醫美/美容競爭",
   complementary_anchors: "互補錨點",
   convenience_density: "超商密度",
   accessibility: "交通可及",
@@ -54,6 +55,23 @@ function renderMeta(payload) {
     document.getElementById("generated").textContent =
       `資料產生時間：${payload.generated}`;
   }
+  renderFreshness(payload);
+}
+
+// 資料新鮮度徽章：顯示最新快照日期，超過 STALE_DAYS 天標紅提醒該刷新
+const STALE_DAYS = 40;
+function renderFreshness(payload) {
+  const el = document.getElementById("freshness");
+  if (!el) return;
+  const dates = (payload.trend && payload.trend.dates) || [];
+  const last = dates.length ? dates[dates.length - 1] : null;
+  if (!last) { el.textContent = ""; return; }
+  const ageDays = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
+  const stale = ageDays > STALE_DAYS;
+  el.classList.toggle("stale", stale);
+  el.classList.toggle("fresh", !stale);
+  const ageTxt = ageDays <= 0 ? "今日更新" : `${ageDays} 天前`;
+  el.textContent = `資料更新於 ${last}（${ageTxt}）${stale ? "　⚠ 已逾 " + STALE_DAYS + " 天，建議重新刷新" : ""}`;
 }
 
 // 排名：用最新趨勢值排序
@@ -76,13 +94,18 @@ function renderRanking(payload) {
     </div>`).join("");
 }
 
-// 各科加權拆解表
+// 數值權重 → 等級標籤（對齊 config weight_levels）
+const WEIGHT_LEVEL = { 5: "最高", 4: "高", 3: "中", 2: "低", 1: "極低", 0: "無" };
+function levelLabel(w) { return WEIGHT_LEVEL[w] != null ? WEIGHT_LEVEL[w] : String(w); }
+
+// 各科加權拆解表 + what-if 權重試算滑桿
 function renderBreakdown(payload) {
   const breakdowns = payload.breakdowns || {};
   const names = Object.keys(breakdowns);
   const sel = document.getElementById("specialty-select");
   const tbody = document.querySelector("#breakdown-table tbody");
   const tfoot = document.querySelector("#breakdown-table tfoot");
+  const resetBtn = document.getElementById("whatif-reset");
   if (!names.length) { tbody.innerHTML = "<tr><td colspan='4'>尚無資料</td></tr>"; return; }
 
   // 預設選總分最高的科別
@@ -90,21 +113,74 @@ function renderBreakdown(payload) {
     (a, b) => breakdowns[b].total - breakdowns[a].total);
   sel.innerHTML = ranked.map(k => `<option value="${k}">${specLabel(k)}</option>`).join("");
 
-  function draw(name) {
-    const bd = breakdowns[name];
-    const rows = bd.rows.slice().sort((a, b) => b.contribution - a.contribution);
-    tbody.innerHTML = rows.map(r => `
-      <tr class="${r.weight === 0 ? 'muted' : ''}">
-        <td>${factorLabel(r.factor)}</td>
-        <td>${r.level}<span class="wnum">(${r.weight})</span></td>
-        <td>${fmt(r.score)}</td>
-        <td><span class="contrib-bar"><span style="width:${Math.min(r.contribution / bd.total * 100, 100).toFixed(1)}%"></span></span>${fmt(r.contribution)}</td>
-      </tr>`).join("");
-    tfoot.innerHTML = `<tr><th colspan="3">總分（加權平均）</th><th>${fmt(bd.total)}</th></tr>`;
+  // 目前科別的 what-if 權重狀態：factor -> 權重（初始＝原始權重）
+  let current = null;       // 科別名
+  let liveWeights = {};     // 試算中的權重
+
+  function weightedTotal(rows, weights) {
+    let num = 0, den = 0;
+    rows.forEach(r => {
+      const w = weights[r.factor];
+      if (r.score != null) { num += r.score * w; den += w; }
+    });
+    return den ? num / den : 0;
   }
 
-  sel.onchange = () => draw(sel.value);
-  draw(ranked[0]);
+  function rowsFor(name) { return breakdowns[name].rows; }
+
+  function redraw() {
+    const rows = rowsFor(current);
+    const total = weightedTotal(rows, liveWeights);
+    const orig = breakdowns[current].total;
+    // 依「試算貢獻」排序
+    const den = Object.values(liveWeights).reduce((a, b) => a + b, 0) || 1;
+    const view = rows.map(r => ({
+      ...r,
+      w: liveWeights[r.factor],
+      contribution: r.score != null ? r.score * liveWeights[r.factor] / den : 0,
+    })).sort((a, b) => b.contribution - a.contribution);
+
+    tbody.innerHTML = view.map(r => `
+      <tr class="${r.w === 0 ? 'muted' : ''}">
+        <td>${factorLabel(r.factor)}</td>
+        <td class="wcell">
+          <input type="range" min="0" max="5" step="1" value="${r.w}"
+                 data-factor="${r.factor}" class="wslider" aria-label="${factorLabel(r.factor)} 權重">
+          <span class="wlevel">${levelLabel(r.w)}<span class="wnum">(${r.w})</span></span>
+        </td>
+        <td>${fmt(r.score)}</td>
+        <td><span class="contrib-bar"><span style="width:${Math.min(total ? r.contribution / total * 100 : 0, 100).toFixed(1)}%"></span></span>${fmt(r.contribution)}</td>
+      </tr>`).join("");
+
+    const changed = rows.some(r => liveWeights[r.factor] !== r.weight);
+    const diff = total - orig;
+    const diffTxt = changed
+      ? `（原始 ${fmt(orig)}　<span class="${diff >= 0 ? 'up' : 'down'}">${diff >= 0 ? '+' : ''}${fmt(diff)}</span>）`
+      : "";
+    tfoot.innerHTML =
+      `<tr><th colspan="3">${changed ? '試算總分' : '總分'}（加權平均）</th>` +
+      `<th>${fmt(total)} ${diffTxt}</th></tr>`;
+    if (resetBtn) resetBtn.disabled = !changed;
+
+    // 綁定滑桿
+    tbody.querySelectorAll(".wslider").forEach(sl => {
+      sl.addEventListener("input", () => {
+        liveWeights[sl.dataset.factor] = parseInt(sl.value, 10);
+        redraw();
+      });
+    });
+  }
+
+  function load(name) {
+    current = name;
+    liveWeights = {};
+    rowsFor(name).forEach(r => { liveWeights[r.factor] = r.weight; });
+    redraw();
+  }
+
+  sel.onchange = () => load(sel.value);
+  if (resetBtn) resetBtn.onclick = () => load(current);
+  load(ranked[0]);
 }
 
 // 較上筆變化的文字（含漲跌色與比率）
@@ -181,55 +257,22 @@ function proximityWeight(d) {
   return 1.0 - (1.0 - COMPETITION_FLOOR) * (d - WALK_KM) / (DRIVE_KM - WALK_KM);
 }
 
-// 3km 內競爭診所清單（名稱／地址／距離／競爭權重／評分），近者在前
-function renderClinicList(geo) {
-  const tbody = document.querySelector("#clinic-table tbody");
-  const countEl = document.getElementById("clinic-count");
-  const clinics = (geo.clinics || []).slice();
-  if (countEl) countEl.textContent = String(clinics.length);
+// 通用「鄰近點位清單」：名稱／地址／距離／（競爭或綜效）權重／評分，近者在前
+function renderProximityList(items, tableSel, countId) {
+  const tbody = document.querySelector(`${tableSel} tbody`);
+  const countEl = document.getElementById(countId);
+  const list = (items || []).slice();
+  if (countEl) countEl.textContent = String(list.length);
   if (!tbody) return;
-  if (!clinics.length) {
+  if (!list.length) {
     tbody.innerHTML = "<tr><td colspan='5'>尚無資料</td></tr>";
     return;
   }
-  // 距離越近競爭越強 → 近者在前（無距離者排最後）
-  clinics.sort((a, b) =>
+  // 距離越近影響越強 → 近者在前（無距離者排最後）
+  list.sort((a, b) =>
     (a.dist_km == null ? Infinity : a.dist_km) -
     (b.dist_km == null ? Infinity : b.dist_km));
-  tbody.innerHTML = clinics.map(c => {
-    const rating = c.rating == null ? "—" :
-      `${fmt(c.rating)}${c.rating_count ? `（${c.rating_count}）` : ""}`;
-    const dist = c.dist_km == null ? "—" :
-      `<span style="white-space:nowrap">${c.dist_km.toFixed(2)} km</span>`;
-    const w = proximityWeight(c.dist_km);
-    const wTxt = w == null ? "—" :
-      `<span class="contrib-bar"><span style="width:${(w * 100).toFixed(0)}%"></span></span>${w.toFixed(2)}`;
-    return `<tr>
-      <td>${c.name || "—"}</td>
-      <td class="addr">${c.address || "—"}</td>
-      <td>${dist}</td>
-      <td>${wTxt}</td>
-      <td>${rating}</td>
-    </tr>`;
-  }).join("");
-}
-
-// 3km 內互補錨點清單（藥局／醫院；名稱／地址／距離／綜效權重／評分），近者在前
-function renderAnchorList(geo) {
-  const tbody = document.querySelector("#anchor-table tbody");
-  const countEl = document.getElementById("anchor-count");
-  const anchors = (geo.anchors || []).slice();
-  if (countEl) countEl.textContent = String(anchors.length);
-  if (!tbody) return;
-  if (!anchors.length) {
-    tbody.innerHTML = "<tr><td colspan='5'>尚無資料</td></tr>";
-    return;
-  }
-  // 距離越近綜效越強 → 近者在前（無距離者排最後）
-  anchors.sort((a, b) =>
-    (a.dist_km == null ? Infinity : a.dist_km) -
-    (b.dist_km == null ? Infinity : b.dist_km));
-  tbody.innerHTML = anchors.map(c => {
+  tbody.innerHTML = list.map(c => {
     const rating = c.rating == null ? "—" :
       `${fmt(c.rating)}${c.rating_count ? `（${c.rating_count}）` : ""}`;
     const dist = c.dist_km == null ? "—" :
@@ -292,7 +335,8 @@ function renderMap(payload, geo) {
   L.circle(center, { radius: 3000, color: "#16a34a", fill: false }).addTo(map);
 
   const groups = {
-    clinics: { color: "#dc2626", label: "競爭診所" },
+    clinics: { color: "#dc2626", label: "西醫診所" },
+    aesthetic: { color: "#db2777", label: "醫美/美容" },
     anchors: { color: "#7c3aed", label: "互補錨點" },
     convenience: { color: "#d97706", label: "便利商店" },
     transit: { color: "#0891b2", label: "公車站" },
@@ -339,8 +383,9 @@ async function main() {
   renderFactorTrend(payload);
   renderTrend(payload);
   renderMap(payload, geo);
-  renderClinicList(geo);
-  renderAnchorList(geo);
+  renderProximityList(geo.clinics, "#clinic-table", "clinic-count");
+  renderProximityList(geo.aesthetic, "#aesthetic-table", "aesthetic-count");
+  renderProximityList(geo.anchors, "#anchor-table", "anchor-count");
 }
 
 main();

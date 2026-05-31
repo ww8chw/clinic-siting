@@ -14,6 +14,7 @@
   <header>
     <h1>診所選址適合度評估</h1>
     <p id="meta-line">載入中…</p>
+    <p><span id="freshness" class="freshness"></span></p>
   </header>
 
   <main>
@@ -25,9 +26,11 @@
 
     <section class="card">
       <h2>各科分數運算明細</h2>
+      <p class="hint">拖動「權重」欄的滑桿可即時試算：調整任一因子重要性後，下方總分會重算（純前端試算，不影響實際資料）。</p>
       <div class="select-row">
         <label for="specialty-select">選擇科別：</label>
         <select id="specialty-select"></select>
+        <button id="whatif-reset" type="button" class="reset-btn" disabled>還原權重</button>
       </div>
       <div class="table-wrap">
         <table id="breakdown-table">
@@ -84,9 +87,23 @@
     </section>
 
     <section class="card">
-      <h2>3km 內競爭診所清單（<span id="clinic-count">0</span> 家）</h2>
+      <h2>3km 內西醫一般診所清單（<span id="clinic-count">0</span> 家）</h2>
+      <p class="hint">家醫/功能醫學/減重/精神科的競爭對手（排除牙醫、中醫、醫美、醫院）。</p>
       <div class="table-wrap">
         <table id="clinic-table">
+          <thead>
+            <tr><th>名稱</th><th>地址</th><th>距離</th><th>競爭權重</th><th>評分</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>3km 內醫美/美容競爭清單（<span id="aesthetic-count">0</span> 家）</h2>
+      <p class="hint">醫美科的競爭對手（醫美診所、皮膚科、美容／SPA／美甲／紋繡）。</p>
+      <div class="table-wrap">
+        <table id="aesthetic-table">
           <thead>
             <tr><th>名稱</th><th>地址</th><th>距離</th><th>競爭權重</th><th>評分</th></tr>
           </thead>
