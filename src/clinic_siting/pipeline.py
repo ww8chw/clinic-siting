@@ -3,7 +3,9 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from clinic_siting.analysis.aggregate import WALK_KM, DRIVE_KM, count_within
+from clinic_siting.analysis.aggregate import (
+    WALK_KM, DRIVE_KM, count_within, weighted_count_within)
+from clinic_siting.geo.distance import haversine_km
 from clinic_siting.analysis.factors import build_factors, factor_scores
 from clinic_siting.data_sources import (
     env,
@@ -88,7 +90,12 @@ def collect_live(center: tuple[float, float]) -> tuple[dict, dict]:
             resp = google_places.fetch_search_nearby(
                 ["doctor"], center[0], center[1], _DRIVE_M, google_key)
             clinics = _points(google_places.parse_places(resp))
+            for c in clinics:
+                c["dist_km"] = round(
+                    haversine_km(center[0], center[1], c["lat"], c["lon"]), 2)
             raw["competition_count"] = count_within(center, clinics, DRIVE_KM)
+            raw["competition_weighted"] = round(
+                weighted_count_within(center, clinics, DRIVE_KM), 2)
             geo["clinics"] = clinics
         except Exception:
             pass

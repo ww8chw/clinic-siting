@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from clinic_siting.analysis.aggregate import WALK_KM, DRIVE_KM, COMPETITION_FLOOR
 from clinic_siting.scoring.normalize import minmax_score
 
 # 12 因子（順序對齊 config/specialties.yaml）
@@ -117,8 +118,12 @@ def build_factors(raw: dict) -> dict[str, FactorResult]:
     )
 
     # 線上來源（缺漏 → missing，pipeline 層再決定是否沿用上次值）
-    if "competition_count" in raw and raw["competition_count"] is not None:
-        score = _competition_score(raw.get("population", 0), raw["competition_count"])
+    # 優先用距離加權有效家數（近者競爭強）；無則退回原始家數
+    comp = raw.get("competition_weighted")
+    if comp is None:
+        comp = raw.get("competition_count")
+    if comp is not None:
+        score = _competition_score(raw.get("population", 0), comp)
         out["competition"] = FactorResult(score, "real")
     else:
         out["competition"] = FactorResult(NEUTRAL, "missing")
@@ -206,12 +211,17 @@ def factor_explanation(name: str, raw: dict) -> dict:
         c = g("competition_count")
         if c is None:
             return {"raw": "無資料", "basis": "沿用上次快照值或中性 50"}
+        w = g("competition_weighted")
+        eff = w if w is not None else c
         demand = (g("population") or 0) * VISIT_RATE
-        per = demand / c if c else 0.0
+        per = demand / eff if eff else 0.0
+        eff_txt = f"（距離加權有效 {w:.1f} 家）" if w is not None else ""
         return {
-            "raw": f"3km 內同業 {c} 家｜月需求估 {demand:,.0f} 人次（每家 {per:,.0f}）",
-            "basis": (f"每家需求量映射 {DEMAND_PER_CLINIC_LO:.0f}–{DEMAND_PER_CLINIC_HI:.0f}"
-                      f" → 0–100（需求>供給的群聚為加分，過密才扣分）"),
+            "raw": (f"3km 內同業 {c} 家{eff_txt}｜月需求估 {demand:,.0f} 人次"
+                    f"（每家 {per:,.0f}）"),
+            "basis": (f"近者競爭強：步行 {WALK_KM:.0f}km 內權重 1.0，至車程 "
+                      f"{DRIVE_KM:.0f}km 線性衰減至 {COMPETITION_FLOOR}；有效家數映射 "
+                      f"{DEMAND_PER_CLINIC_LO:.0f}–{DEMAND_PER_CLINIC_HI:.0f} → 0–100"),
         }
     if name == "complementary_anchors":
         v = g("anchor_count")

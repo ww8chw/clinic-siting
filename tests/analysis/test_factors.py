@@ -58,6 +58,16 @@ def test_missing_online_keys_degrade_to_neutral():
     assert f["purchasing_power"].source == "real"
 
 
+def test_competition_uses_weighted_effective_count():
+    # 同樣 10 家，但距離加權後有效家數僅 4 → 競爭較輕、分數較高
+    base = dict(FULL_RAW, competition_count=10)
+    weighted = dict(base, competition_weighted=4.0)
+    s_raw = build_factors(base)["competition"].score
+    s_w = build_factors(weighted)["competition"].score
+    assert s_w > s_raw
+    assert build_factors(weighted)["competition"].source == "real"
+
+
 def test_competition_cluster_beats_oversaturation():
     cluster = dict(FULL_RAW, competition_count=5)
     oversat = dict(FULL_RAW, competition_count=30)

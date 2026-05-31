@@ -171,7 +171,16 @@ function renderFactorTrend(payload) {
   draw(names[0]);
 }
 
-// 3km 內競爭診所清單（名稱／地址／評分）
+// 競爭距離權重（與後端 aggregate.proximity_weight 一致）
+const WALK_KM = 1.0, DRIVE_KM = 3.0, COMPETITION_FLOOR = 0.2;
+function proximityWeight(d) {
+  if (d == null) return null;
+  if (d <= WALK_KM) return 1.0;
+  if (d >= DRIVE_KM) return COMPETITION_FLOOR;
+  return 1.0 - (1.0 - COMPETITION_FLOOR) * (d - WALK_KM) / (DRIVE_KM - WALK_KM);
+}
+
+// 3km 內競爭診所清單（名稱／地址／距離／競爭權重／評分），近者在前
 function renderClinicList(geo) {
   const tbody = document.querySelector("#clinic-table tbody");
   const countEl = document.getElementById("clinic-count");
@@ -179,17 +188,26 @@ function renderClinicList(geo) {
   if (countEl) countEl.textContent = String(clinics.length);
   if (!tbody) return;
   if (!clinics.length) {
-    tbody.innerHTML = "<tr><td colspan='3'>尚無資料</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='5'>尚無資料</td></tr>";
     return;
   }
-  // 有評分者優先、評分高者在前
-  clinics.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  // 距離越近競爭越強 → 近者在前（無距離者排最後）
+  clinics.sort((a, b) =>
+    (a.dist_km == null ? Infinity : a.dist_km) -
+    (b.dist_km == null ? Infinity : b.dist_km));
   tbody.innerHTML = clinics.map(c => {
     const rating = c.rating == null ? "—" :
       `${fmt(c.rating)}${c.rating_count ? `（${c.rating_count}）` : ""}`;
+    const dist = c.dist_km == null ? "—" :
+      `<span style="white-space:nowrap">${c.dist_km.toFixed(2)} km</span>`;
+    const w = proximityWeight(c.dist_km);
+    const wTxt = w == null ? "—" :
+      `<span class="contrib-bar"><span style="width:${(w * 100).toFixed(0)}%"></span></span>${w.toFixed(2)}`;
     return `<tr>
       <td>${c.name || "—"}</td>
       <td class="addr">${c.address || "—"}</td>
+      <td>${dist}</td>
+      <td>${wTxt}</td>
       <td>${rating}</td>
     </tr>`;
   }).join("");
