@@ -18,7 +18,7 @@ const FACTOR_LABELS = {
   business_density: "商業密度",
   land_use_mix: "土地混合",
   competition: "西醫診所競爭",
-  competition_aesthetic: "醫美/美容競爭",
+  competition_aesthetic: "醫美/皮膚科競爭",
   complementary_anchors: "互補錨點",
   convenience_density: "超商密度",
   accessibility: "交通可及",
@@ -336,7 +336,7 @@ function renderMap(payload, geo) {
 
   const groups = {
     clinics: { color: "#dc2626", label: "西醫診所" },
-    aesthetic: { color: "#db2777", label: "醫美/美容" },
+    aesthetic: { color: "#db2777", label: "醫美/皮膚科" },
     anchors: { color: "#7c3aed", label: "互補錨點" },
     convenience: { color: "#d97706", label: "便利商店" },
     transit: { color: "#0891b2", label: "公車站" },

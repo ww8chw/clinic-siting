@@ -165,7 +165,7 @@ def build_factors(raw: dict) -> dict[str, FactorResult]:
     else:
         out["competition"] = FactorResult(NEUTRAL, "missing")
 
-    # 醫美/美容競爭（醫美科專用）：同樣需求/供給模型，供給為醫美美容家數
+    # 醫美/皮膚科競爭（醫美科專用）：同樣需求/供給模型，供給為醫療型醫美家數
     comp_a = raw.get("competition_aesthetic_weighted")
     if comp_a is None:
         comp_a = raw.get("competition_aesthetic_count")
@@ -301,9 +301,9 @@ def factor_explanation(name: str, raw: dict) -> dict:
         per = demand / eff if eff else 0.0
         eff_txt = f"（距離加權有效 {w:.1f} 家）" if w is not None else ""
         return {
-            "raw": (f"3km 內醫美/美容 {c} 家{eff_txt}｜月需求估 {demand:,.0f} 人次"
+            "raw": (f"3km 內醫美/皮膚科診所 {c} 家{eff_txt}｜月需求估 {demand:,.0f} 人次"
                     f"（每家 {per:,.0f}）"),
-            "basis": (f"醫美科專用競爭池（醫美診所＋皮膚科＋美容/SPA/美甲）；"
+            "basis": (f"醫美科專用競爭池（醫美/醫學美容診所＋整形外科＋皮膚科；不含純美容業）；"
                       f"近者競爭強：步行 {WALK_KM:.0f}km 內權重 1.0，至車程 "
                       f"{DRIVE_KM:.0f}km 線性衰減至 {COMPETITION_FLOOR}；有效家數映射 "
                       f"{DEMAND_PER_CLINIC_LO:.0f}–{DEMAND_PER_CLINIC_HI:.0f} → 0–100"),
