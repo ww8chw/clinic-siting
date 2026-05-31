@@ -23,6 +23,7 @@ def parse_places(raw: dict) -> list[Place]:
             types=p.get("types", []),
             rating=p.get("rating"),
             rating_count=p.get("userRatingCount"),
+            address=p.get("formattedAddress", ""),
         ))
     return out
 

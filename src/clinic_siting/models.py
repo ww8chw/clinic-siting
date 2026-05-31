@@ -19,6 +19,7 @@ class Place:
     types: list[str] = field(default_factory=list)
     rating: float | None = None
     rating_count: int | None = None
+    address: str = ""
 
 
 @dataclass

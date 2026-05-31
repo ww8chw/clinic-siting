@@ -48,11 +48,13 @@ def latest_radar(snapshots: list[dict]) -> dict:
 
 
 def latest_factor_table(snapshots: list[dict]) -> list[dict]:
-    """最新一筆的因子明細：原始數據、換算依據、正規化分、來源（依 ALL_FACTORS 順序）。"""
+    """最新一筆的因子明細：原始數據、換算依據、正規化分、來源、與上一筆的變化。"""
     if not snapshots:
         return []
     snap = snapshots[-1]
+    prev = snapshots[-2] if len(snapshots) >= 2 else None
     factors = snap.get("factors", {})
+    prev_factors = prev.get("factors", {}) if prev else {}
     raw = snap.get("raw", {})
     rows = []
     for name in ALL_FACTORS:
@@ -60,14 +62,31 @@ def latest_factor_table(snapshots: list[dict]) -> list[dict]:
         if f is None:
             continue
         exp = factor_explanation(name, raw)
+        pf = prev_factors.get(name)
+        prev_score = pf["score"] if pf else None
+        delta = (f["score"] - prev_score) if prev_score is not None else None
+        delta_pct = (delta / prev_score * 100.0) if (delta is not None and prev_score) else None
         rows.append({
             "factor": name,
             "score": f["score"],
             "source": f["source"],
             "raw_text": exp["raw"],
             "basis_text": exp["basis"],
+            "prev_score": prev_score,
+            "delta": round(delta, 2) if delta is not None else None,
+            "delta_pct": round(delta_pct, 1) if delta_pct is not None else None,
         })
     return rows
+
+
+def factor_trend_series(snapshots: list[dict]) -> dict:
+    """跨快照因子折線資料：{dates, factors: {name: [score,...]}}。"""
+    dates = [s["date"] for s in snapshots]
+    factors = {
+        name: [s.get("factors", {}).get(name, {}).get("score") for s in snapshots]
+        for name in ALL_FACTORS
+    }
+    return {"dates": dates, "factors": factors}
 
 
 def specialty_breakdowns(snapshots: list[dict], config) -> dict:
@@ -109,6 +128,7 @@ def build_payload(snapshots: list[dict], config=None) -> dict:
             "latlon": list(geocode.SITE_LATLON),
         },
         "trend": trend_series(snapshots),
+        "factor_trend": factor_trend_series(snapshots),
         "radar": latest_radar(snapshots),
         "factors": latest_factor_table(snapshots),
         "breakdowns": specialty_breakdowns(snapshots, config),

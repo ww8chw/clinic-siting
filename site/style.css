@@ -88,6 +88,16 @@ tr.muted td { color: var(--missing); }
 
 canvas { max-width: 100%; }
 
+/* 較上筆變化 */
+.delta { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.delta.up { color: var(--real); }
+.delta.down { color: #dc2626; }
+.delta.flat { color: var(--muted); font-weight: 400; }
+.delta-pct { color: var(--muted); font-size: 0.78rem; margin-left: 0.3rem; }
+
+/* 診所清單地址欄 */
+td.addr { color: var(--muted); font-size: 0.82rem; max-width: 360px; }
+
 /* 來源標籤 */
 .legend { font-size: 0.85rem; color: var(--muted); margin: 0.75rem 0 0; }
 .src {

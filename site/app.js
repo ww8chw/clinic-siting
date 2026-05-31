@@ -106,19 +106,93 @@ function renderBreakdown(payload) {
   draw(ranked[0]);
 }
 
+// 較上筆變化的文字（含漲跌色與比率）
+function deltaCell(f) {
+  if (f.delta == null) return `<span class="delta flat">—</span>`;
+  const cls = f.delta > 0 ? "up" : (f.delta < 0 ? "down" : "flat");
+  const arrow = f.delta > 0 ? "▲" : (f.delta < 0 ? "▼" : "—");
+  const sign = f.delta > 0 ? "+" : "";
+  const pct = f.delta_pct == null ? "" :
+    `<span class="delta-pct">(${sign}${fmt(f.delta_pct)}%)</span>`;
+  return `<span class="delta ${cls}">${arrow} ${sign}${fmt(f.delta)}</span>${pct}`;
+}
+
 // 因子原始數據表
 function renderFactorTable(payload) {
   const tbody = document.querySelector("#factor-table tbody");
   const factors = payload.factors || [];
-  if (!factors.length) { tbody.innerHTML = "<tr><td colspan='5'>尚無資料</td></tr>"; return; }
+  if (!factors.length) { tbody.innerHTML = "<tr><td colspan='6'>尚無資料</td></tr>"; return; }
   tbody.innerHTML = factors.map(f => `
     <tr>
       <td>${factorLabel(f.factor)}</td>
       <td>${f.raw_text}</td>
       <td class="basis">${f.basis_text}</td>
       <td>${fmt(f.score)}</td>
+      <td>${deltaCell(f)}</td>
       <td><span class="src ${f.source}">${SOURCE_LABELS[f.source] || f.source}</span></td>
     </tr>`).join("");
+}
+
+// 單因子分數趨勢：下拉選因子，畫該因子跨快照折線
+function renderFactorTrend(payload) {
+  const ft = payload.factor_trend || { dates: [], factors: {} };
+  const sel = document.getElementById("factor-select");
+  const ctx = document.getElementById("factorTrendChart");
+  if (!ft.dates.length) return;
+
+  // 只列出有任一資料點的因子
+  const names = Object.keys(ft.factors).filter(
+    n => (ft.factors[n] || []).some(v => v != null));
+  if (!names.length) return;
+  sel.innerHTML = names.map(n => `<option value="${n}">${factorLabel(n)}</option>`).join("");
+
+  let chart = null;
+  function draw(name) {
+    const data = ft.factors[name] || [];
+    const cfg = {
+      type: "line",
+      data: {
+        labels: ft.dates,
+        datasets: [{
+          label: factorLabel(name),
+          data,
+          borderColor: "#2563eb",
+          backgroundColor: "#2563eb",
+          tension: 0.25,
+          spanGaps: true,
+        }],
+      },
+      options: { responsive: true, scales: { y: { suggestedMin: 0, suggestedMax: 100 } } },
+    };
+    if (chart) { chart.destroy(); }
+    chart = new Chart(ctx, cfg);
+  }
+  sel.onchange = () => draw(sel.value);
+  draw(names[0]);
+}
+
+// 3km 內競爭診所清單（名稱／地址／評分）
+function renderClinicList(geo) {
+  const tbody = document.querySelector("#clinic-table tbody");
+  const countEl = document.getElementById("clinic-count");
+  const clinics = (geo.clinics || []).slice();
+  if (countEl) countEl.textContent = String(clinics.length);
+  if (!tbody) return;
+  if (!clinics.length) {
+    tbody.innerHTML = "<tr><td colspan='3'>尚無資料</td></tr>";
+    return;
+  }
+  // 有評分者優先、評分高者在前
+  clinics.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  tbody.innerHTML = clinics.map(c => {
+    const rating = c.rating == null ? "—" :
+      `${fmt(c.rating)}${c.rating_count ? `（${c.rating_count}）` : ""}`;
+    return `<tr>
+      <td>${c.name || "—"}</td>
+      <td class="addr">${c.address || "—"}</td>
+      <td>${rating}</td>
+    </tr>`;
+  }).join("");
 }
 
 function renderTrend(payload) {
@@ -181,8 +255,10 @@ async function main() {
   renderRanking(payload);
   renderBreakdown(payload);
   renderFactorTable(payload);
+  renderFactorTrend(payload);
   renderTrend(payload);
   renderMap(payload, geo);
+  renderClinicList(geo);
 }
 
 main();

@@ -44,13 +44,13 @@
     </section>
 
     <section class="card">
-      <h2>因子原始數據與換算依據</h2>
+      <h2>因子原始數據、換算依據與變化</h2>
       <div class="table-wrap">
         <table id="factor-table">
           <thead>
             <tr>
               <th>因子</th><th>原始數據</th><th>換算依據</th>
-              <th>正規化分</th><th>來源</th>
+              <th>正規化分</th><th>較上筆</th><th>來源</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -65,6 +65,15 @@
     </section>
 
     <section class="card">
+      <h2>單因子分數趨勢</h2>
+      <div class="select-row">
+        <label for="factor-select">選擇因子：</label>
+        <select id="factor-select"></select>
+      </div>
+      <canvas id="factorTrendChart"></canvas>
+    </section>
+
+    <section class="card">
       <h2>各科別分數趨勢</h2>
       <canvas id="trendChart"></canvas>
     </section>
@@ -72,6 +81,18 @@
     <section class="card" id="map-card">
       <h2>商圈地圖（步行 1km / 車程 3km）</h2>
       <div id="map"></div>
+    </section>
+
+    <section class="card">
+      <h2>3km 內競爭診所清單（<span id="clinic-count">0</span> 家）</h2>
+      <div class="table-wrap">
+        <table id="clinic-table">
+          <thead>
+            <tr><th>名稱</th><th>地址</th><th>評分</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </section>
   </main>
 

@@ -50,9 +50,19 @@ def collect_offline(reference_dir,
 
 
 def _points(objs) -> list[dict]:
-    """把 Place/TransitStop 物件轉成 {lat, lon, name} 點位。"""
-    return [{"lat": o.lat, "lon": o.lon, "name": getattr(o, "name", "")}
-            for o in objs if o.lat and o.lon]
+    """把 Place/TransitStop 物件轉成點位 dict（含 name；Place 另帶 address/rating）。"""
+    out = []
+    for o in objs:
+        if not (o.lat and o.lon):
+            continue
+        p = {"lat": o.lat, "lon": o.lon, "name": getattr(o, "name", "")}
+        if getattr(o, "address", ""):
+            p["address"] = o.address
+        if getattr(o, "rating", None) is not None:
+            p["rating"] = o.rating
+            p["rating_count"] = getattr(o, "rating_count", None)
+        out.append(p)
+    return out
 
 
 def collect_live(center: tuple[float, float]) -> tuple[dict, dict]:
