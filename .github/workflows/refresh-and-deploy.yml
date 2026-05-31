@@ -1,7 +1,6 @@
 name: Refresh & Deploy
 
 # 定期自動更新機制：每月重新抓資料、算分、重建網站並部署到 GitHub Pages。
-# - schedule：每月 1 日自動刷新（雲端執行，不需本機開機）
 # - workflow_dispatch：可在 Actions 頁手動觸發
 # - push：site/ 內容變動時自動重新部署
 on:
