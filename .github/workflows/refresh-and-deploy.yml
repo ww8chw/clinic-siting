@@ -5,8 +5,6 @@ name: Refresh & Deploy
 # - workflow_dispatch：可在 Actions 頁手動觸發
 # - push：site/ 內容變動時自動重新部署
 on:
-  schedule:
-    - cron: "0 0 1 * *"   # 每月 1 日 00:00 UTC（台北 08:00）
   workflow_dispatch:
   push:
     branches: [main]
