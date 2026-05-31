@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>診所選址評估 — 龜山樂善二路</title>
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin="">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>診所選址適合度評估</h1>
+    <p id="meta-line">載入中…</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>本月五科別適合度（雷達圖）</h2>
+      <canvas id="radarChart"></canvas>
+    </section>
+
+    <section class="card">
+      <h2>各科別分數趨勢</h2>
+      <canvas id="trendChart"></canvas>
+    </section>
+
+    <section class="card">
+      <h2>本月因子細項</h2>
+      <canvas id="factorChart"></canvas>
+      <p class="legend">
+        來源：<span class="src real">real</span>
+        <span class="src degraded">degraded</span>
+        <span class="src manual">manual</span>
+        <span class="src missing">missing</span>
+      </p>
+    </section>
+
+    <section class="card" id="map-card">
+      <h2>商圈地圖（步行 1km / 車程 3km）</h2>
+      <div id="map"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p id="generated"></p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+          crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>

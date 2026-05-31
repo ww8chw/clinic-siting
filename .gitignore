@@ -10,3 +10,4 @@ data/reference/*
 !data/reference/*.csv
 *.egg-info/
 data/*.jsonl
+site/data/*.json

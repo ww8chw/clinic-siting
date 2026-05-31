@@ -50,13 +50,16 @@ def collect_offline(reference_dir,
 
 
 def _points(objs) -> list[dict]:
-    """把 Place/TransitStop 物件轉成 {lat, lon} 點位。"""
-    return [{"lat": o.lat, "lon": o.lon} for o in objs if o.lat and o.lon]
+    """把 Place/TransitStop 物件轉成 {lat, lon, name} 點位。"""
+    return [{"lat": o.lat, "lon": o.lon, "name": getattr(o, "name", "")}
+            for o in objs if o.lat and o.lon]
 
 
-def collect_live(center: tuple[float, float]) -> dict:
-    """嘗試線上抓取，每來源失敗則略過該 key（交給 factors/snapshot 降級）。"""
+def collect_live(center: tuple[float, float]) -> tuple[dict, dict]:
+    """嘗試線上抓取；回傳 (raw 計數, geo 點位)。
+    每來源失敗則略過該 key（交給 factors/snapshot 降級）。"""
     raw: dict = {}
+    geo: dict = {}
     google_key = env.get_key("GOOGLE_MAPS_API_KEY")
 
     if google_key:
@@ -66,6 +69,7 @@ def collect_live(center: tuple[float, float]) -> dict:
                 ["doctor"], center[0], center[1], _DRIVE_M, google_key)
             clinics = _points(google_places.parse_places(resp))
             raw["competition_count"] = count_within(center, clinics, DRIVE_KM)
+            geo["clinics"] = clinics
         except Exception:
             pass
         try:
@@ -73,6 +77,7 @@ def collect_live(center: tuple[float, float]) -> dict:
                 ["pharmacy", "hospital"], center[0], center[1], _DRIVE_M, google_key)
             anchors = _points(google_places.parse_places(resp))
             raw["anchor_count"] = count_within(center, anchors, DRIVE_KM)
+            geo["anchors"] = anchors
         except Exception:
             pass
 
@@ -80,6 +85,7 @@ def collect_live(center: tuple[float, float]) -> dict:
         q = osm_poi.build_query("shop", "convenience", center[0], center[1], _WALK_M)
         conv = _points(osm_poi.parse_overpass(osm_poi.fetch_overpass(q)))
         raw["convenience_count"] = count_within(center, conv, WALK_KM)
+        geo["convenience"] = conv
     except Exception:
         pass
 
@@ -114,19 +120,24 @@ def collect_live(center: tuple[float, float]) -> dict:
             stops_raw = tdx_transit.fetch_bus_stops(center[0], center[1], _WALK_M, token)
             stops = _points(tdx_transit.parse_bus_stops(stops_raw))
             raw["transit_count"] = count_within(center, stops, WALK_KM)
+            geo["transit"] = stops
         except Exception:
             pass
 
-    return raw
+    return raw, geo
 
 
 def run_pipeline(reference_dir, history_path, config_path,
                  live: bool = False,
-                 center: tuple[float, float] = geocode.SITE_LATLON) -> dict:
-    """collect → build_factors → fill_degraded → score → 組 snapshot → append。"""
+                 center: tuple[float, float] = geocode.SITE_LATLON,
+                 site_dir=None) -> dict:
+    """collect → build_factors → fill_degraded → score → 組 snapshot → append。
+    給 site_dir 時，append 後重建靜態站資料。"""
     raw = collect_offline(reference_dir)
+    geo: dict = {}
     if live:
-        raw.update(collect_live(center))
+        live_raw, geo = collect_live(center)
+        raw.update(live_raw)
 
     factors = build_factors(raw)
     last = load_last_snapshot(history_path)
@@ -141,6 +152,12 @@ def run_pipeline(reference_dir, history_path, config_path,
         "factors": {name: {"score": r.score, "source": r.source}
                     for name, r in factors.items()},
         "raw": raw,
+        "geo": geo,
     }
     append_snapshot(history_path, snapshot)
+
+    if site_dir is not None:
+        from clinic_siting.site_export import build_site
+        build_site(history_path, site_dir)
+
     return snapshot

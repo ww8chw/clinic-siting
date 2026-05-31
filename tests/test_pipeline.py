@@ -57,3 +57,21 @@ def test_scores_are_bounded(tmp_path):
     snap = run_pipeline(ref, hist, CONFIG, live=False)
     for v in snap["scores"].values():
         assert 0.0 <= v <= 100.0
+
+
+def test_offline_snapshot_has_empty_geo(tmp_path):
+    ref = _make_reference_dir(tmp_path)
+    hist = tmp_path / "history.jsonl"
+    snap = run_pipeline(ref, hist, CONFIG, live=False)
+    assert snap["geo"] == {}
+
+
+def test_run_pipeline_builds_site_when_dir_given(tmp_path):
+    import json
+    ref = _make_reference_dir(tmp_path)
+    hist = tmp_path / "history.jsonl"
+    site = tmp_path / "site"
+    run_pipeline(ref, hist, CONFIG, live=False, site_dir=site)
+    payload = json.loads((site / "data" / "history.json").read_text(encoding="utf-8"))
+    assert set(payload["trend"]["specialties"].keys()) == SPECIALTIES
+    assert (site / "data" / "geo.json").exists()

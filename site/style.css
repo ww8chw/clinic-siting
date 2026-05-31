@@ -1,0 +1,80 @@
+:root {
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --ink: #1f2933;
+  --muted: #6b7280;
+  --accent: #2563eb;
+  --real: #16a34a;
+  --degraded: #d97706;
+  --manual: #6366f1;
+  --missing: #9ca3af;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+header {
+  padding: 1.5rem 1.25rem 0.75rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+header h1 { margin: 0 0 0.25rem; font-size: 1.5rem; }
+#meta-line { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 2rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  min-width: 0;
+}
+
+.card h2 { margin: 0 0 0.75rem; font-size: 1.05rem; }
+
+#map-card { grid-column: 1 / -1; }
+#map { height: 420px; border-radius: 8px; }
+
+canvas { max-width: 100%; }
+
+.legend { font-size: 0.85rem; color: var(--muted); margin: 0.5rem 0 0; }
+.src {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 6px;
+  color: #fff;
+  margin-right: 0.3rem;
+  font-size: 0.78rem;
+}
+.src.real { background: var(--real); }
+.src.degraded { background: var(--degraded); }
+.src.manual { background: var(--manual); }
+.src.missing { background: var(--missing); }
+
+footer {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1.25rem 2rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 760px) {
+  main { grid-template-columns: 1fr; }
+}
