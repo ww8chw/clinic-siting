@@ -9,8 +9,10 @@ from clinic_siting.geo.distance import haversine_km
 from clinic_siting.analysis.factors import build_factors, factor_scores
 from clinic_siting.data_sources import (
     env,
+    fia_business,
     geocode,
     google_places,
+    moi_agegender,
     osm_poi,
     osm_road,
     realprice,
@@ -28,7 +30,9 @@ from clinic_siting.snapshot import append_snapshot, load_last_snapshot, fill_deg
 
 INCOME_DISTRICT = "桃園市龜山區"
 POP_REGION = "龜山區"
+SITE_SITE_ID = "桃園市龜山區"     # ODRP052 site_id 欄位值
 SITE_VILLAGE = "樂善里"          # 候選點所在村里（樂善二路503號）
+NATIONAL_POP = 23_400_000        # 全國人口（晝夜比值正規化基準）
 
 _WALK_M = int(WALK_KM * 1000)
 _DRIVE_M = int(DRIVE_KM * 1000)
@@ -166,6 +170,24 @@ def collect_live(center: tuple[float, float]) -> tuple[dict, dict]:
         except Exception:
             continue
 
+    # 年齡/性別：內政部 ODRP052 村里壯年(25–49)占比與女性占比
+    try:
+        shares = moi_agegender.collect_village_shares(SITE_SITE_ID, SITE_VILLAGE)
+        if shares is not None:
+            raw["age_prime_share"] = round(shares["prime_share"], 4)
+            raw["female_share"] = round(shares["female_share"], 4)
+            raw["age_pop_total"] = shares["total"]
+    except Exception:
+        pass
+
+    # 晝夜落差：財政部稅籍登記家數（人口在 collect_offline，比值於 run_pipeline 算）
+    try:
+        d_count, total = fia_business.fetch_counts(POP_REGION)
+        raw["fia_business_count"] = d_count
+        raw["fia_business_total"] = total
+    except Exception:
+        pass
+
     tdx_id = env.get_key("TDX_CLIENT_ID")
     tdx_secret = env.get_key("TDX_CLIENT_SECRET")
     if tdx_id and tdx_secret:
@@ -192,6 +214,13 @@ def run_pipeline(reference_dir, history_path, config_path,
     if live:
         live_raw, geo = collect_live(center)
         raw.update(live_raw)
+        # 晝夜比值：營業家數（line）+ 區人口（collect_offline）合併後才能算
+        if "fia_business_count" in raw and "fia_business_total" in raw:
+            ratio = fia_business.business_ratio(
+                raw["fia_business_count"], raw["fia_business_total"],
+                raw.get("population", 0), NATIONAL_POP)
+            if ratio is not None:
+                raw["business_ratio"] = round(ratio, 3)
 
     factors = build_factors(raw)
     last = load_last_snapshot(history_path)

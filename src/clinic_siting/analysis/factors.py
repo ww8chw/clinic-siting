@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 from clinic_siting.analysis.aggregate import WALK_KM, DRIVE_KM, COMPETITION_FLOOR
@@ -33,6 +34,14 @@ LANDUSE_LO, LANDUSE_HI = 1.0, 6.0             # 土地使用類型數
 TRANSIT_LO, TRANSIT_HI = 0.0, 20.0            # 公車站數
 DRIVE_MIN_LO, DRIVE_MIN_HI = 5.0, 30.0        # 車程分鐘（越短越好）
 REDEV_AGE_LO, REDEV_AGE_HI = 0.0, 40.0        # 成交屋齡中位（年，越新越發展）
+
+# 年齡/性別：壯年(25–49)占比 + 女性占比 → 自費客群 favorability
+AGE_PRIME_LO, AGE_PRIME_HI = 0.30, 0.55       # 壯年占比（典型區約 0.38）
+FEMALE_LO, FEMALE_HI = 0.45, 0.55             # 女性占比（中心 0.50）
+AGE_PRIME_WEIGHT = 0.7                         # 壯年:女性 = 7:3
+
+# 晝夜落差：營業家數每千人相對全國比值，越接近 1（日夜均衡）越佳
+DAYNIGHT_K = 70.0                              # 每偏離 |ln(比值)| 的扣分係數
 
 # 競爭需求/供給校準
 VISIT_RATE = 0.02                              # 人口 → 月就診需求代理係數
@@ -98,6 +107,21 @@ def _accessibility_score(transit_count, drive_time_min) -> float:
     return (transit + drive) / 2.0
 
 
+def age_gender_score(prime_share: float, female_share: float) -> float:
+    """壯年(25–49)占比為主、女性占比為輔，加權成自費客群 favorability。"""
+    age_c = minmax_score(prime_share, AGE_PRIME_LO, AGE_PRIME_HI)
+    fem_c = minmax_score(female_share, FEMALE_LO, FEMALE_HI)
+    return AGE_PRIME_WEIGHT * age_c + (1.0 - AGE_PRIME_WEIGHT) * fem_c
+
+
+def day_night_score(ratio: float) -> float:
+    """營業家數每千人相對全國比值 → 分數；比值=1（日夜均衡）最高，兩端遞減。"""
+    if ratio <= 0:
+        return NEUTRAL
+    score = 100.0 - DAYNIGHT_K * abs(math.log(ratio))
+    return max(0.0, min(100.0, score))
+
+
 def build_factors(raw: dict) -> dict[str, FactorResult]:
     """原始值 → 12 因子 FactorResult（已處理負向語意，分數一律高=佳）。"""
     out: dict[str, FactorResult] = {}
@@ -159,9 +183,19 @@ def build_factors(raw: dict) -> dict[str, FactorResult]:
     else:
         out["business_density"] = FactorResult(NEUTRAL, "missing")
 
-    # 未下載資料 → 中性 missing
-    out["age_gender"] = FactorResult(NEUTRAL, "missing")
-    out["day_night_gap"] = FactorResult(NEUTRAL, "missing")
+    # 年齡/性別：村里壯年(25–49)占比 + 女性占比（內政部 ODRP052）
+    if raw.get("age_prime_share") is not None and raw.get("female_share") is not None:
+        out["age_gender"] = FactorResult(
+            age_gender_score(raw["age_prime_share"], raw["female_share"]), "real")
+    else:
+        out["age_gender"] = FactorResult(NEUTRAL, "missing")
+
+    # 晝夜落差：行政區營業家數每千人相對全國比值（財政部稅籍登記）
+    if raw.get("business_ratio") is not None:
+        out["day_night_gap"] = FactorResult(
+            day_night_score(raw["business_ratio"]), "real")
+    else:
+        out["day_night_gap"] = FactorResult(NEUTRAL, "missing")
 
     # 能見度：OSM 臨街道路等級代理；無道路資料 → 手動中性
     roads = raw.get("roads")
@@ -281,8 +315,30 @@ def factor_explanation(name: str, raw: dict) -> dict:
             "basis": (f"OSM highway 等級基礎分 + 每增 1 車道(>2) +{LANE_BONUS:.0f}"
                       f"（取周邊最高等級道路）"),
         }
-    if name in ("age_gender", "day_night_gap"):
-        return {"raw": "尚無資料來源", "basis": "中性 50（待補單齡人口／晝夜信令）"}
+    if name == "age_gender":
+        prime = g("age_prime_share")
+        if prime is None:
+            return {"raw": "無資料", "basis": "沿用上次快照值或中性 50"}
+        fem = g("female_share")
+        tot = g("age_pop_total")
+        tot_txt = f"（村里 {tot:,} 人）" if tot else ""
+        return {
+            "raw": (f"壯年 25–49 占 {prime * 100:.1f}%、女性占 "
+                    f"{(fem or 0) * 100:.1f}%{tot_txt}"),
+            "basis": (f"自費客群代理：壯年占比映射 {AGE_PRIME_LO:.0%}–{AGE_PRIME_HI:.0%}、"
+                      f"女性占比映射 {FEMALE_LO:.0%}–{FEMALE_HI:.0%}，"
+                      f"加權 {AGE_PRIME_WEIGHT:.0%}:{1 - AGE_PRIME_WEIGHT:.0%} → 0–100"),
+        }
+    if name == "day_night_gap":
+        ratio = g("business_ratio")
+        if ratio is None:
+            return {"raw": "無資料", "basis": "沿用上次快照值或中性 50"}
+        lean = "日夜均衡" if 0.85 <= ratio <= 1.15 else (
+            "就業聚集型" if ratio > 1.15 else "住宅睡城型")
+        return {
+            "raw": f"營業家數每千人為全國 {ratio:.2f} 倍（{lean}）",
+            "basis": "比值=1 日夜最均衡得分最高；偏離以 |ln(比值)| 線性扣分",
+        }
     if name == "redevelopment_stage":
         v = g("building_age_median")
         if v is None:

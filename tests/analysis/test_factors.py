@@ -5,6 +5,8 @@ from clinic_siting.analysis.factors import (
     factor_scores,
     road_visibility_score,
     best_road_visibility,
+    age_gender_score,
+    day_night_score,
 )
 
 # 龜山量級的完整 raw 輸入
@@ -156,4 +158,45 @@ def test_redevelopment_from_building_age():
 def test_redevelopment_manual_without_building_age():
     f = build_factors(FULL_RAW)["redevelopment_stage"]
     assert f.source == "manual"
+    assert f.score == 50.0
+
+
+def test_age_gender_higher_prime_and_female_scores_higher():
+    # 壯年占比越高 → 分數越高
+    assert age_gender_score(0.55, 0.50) > age_gender_score(0.30, 0.50)
+    # 女性占比越高 → 分數略升
+    assert age_gender_score(0.40, 0.55) > age_gender_score(0.40, 0.45)
+    assert 0.0 <= age_gender_score(0.60, 0.60) <= 100.0
+
+
+def test_age_gender_factor_real_when_shares_present():
+    raw = dict(FULL_RAW, age_prime_share=0.56, female_share=0.514)
+    f = build_factors(raw)["age_gender"]
+    assert f.source == "real"
+    assert f.score > 50.0
+
+
+def test_age_gender_missing_without_shares():
+    f = build_factors(FULL_RAW)["age_gender"]
+    assert f.source == "missing"
+    assert f.score == 50.0
+
+
+def test_day_night_score_peaks_at_balanced():
+    # 比值=1（日夜均衡）最高；兩端（睡城/商辦）較低
+    assert day_night_score(1.0) > day_night_score(0.5)
+    assert day_night_score(1.0) > day_night_score(2.0)
+    assert 0.0 <= day_night_score(3.0) <= 100.0
+
+
+def test_day_night_factor_real_when_ratio_present():
+    raw = dict(FULL_RAW, business_ratio=0.86)
+    f = build_factors(raw)["day_night_gap"]
+    assert f.source == "real"
+    assert f.score > 50.0
+
+
+def test_day_night_missing_without_ratio():
+    f = build_factors(FULL_RAW)["day_night_gap"]
+    assert f.source == "missing"
     assert f.score == 50.0
