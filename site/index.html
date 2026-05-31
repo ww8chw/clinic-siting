@@ -18,24 +18,55 @@
 
   <main>
     <section class="card">
-      <h2>本月五科別適合度（雷達圖）</h2>
-      <canvas id="radarChart"></canvas>
+      <h2>各科適合度排名</h2>
+      <p class="hint">總分 = 各因子正規化分數（0–100）× 該科權重，加權平均而得。點選下方科別可看完整拆解。</p>
+      <div id="ranking"></div>
+    </section>
+
+    <section class="card">
+      <h2>各科分數運算明細</h2>
+      <div class="select-row">
+        <label for="specialty-select">選擇科別：</label>
+        <select id="specialty-select"></select>
+      </div>
+      <div class="table-wrap">
+        <table id="breakdown-table">
+          <thead>
+            <tr>
+              <th>因子</th><th>權重</th><th>因子分</th>
+              <th>貢獻 = 分×權重÷總權重</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot></tfoot>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>因子原始數據與換算依據</h2>
+      <div class="table-wrap">
+        <table id="factor-table">
+          <thead>
+            <tr>
+              <th>因子</th><th>原始數據</th><th>換算依據</th>
+              <th>正規化分</th><th>來源</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="legend">
+        來源：<span class="src real">real 實測</span>
+        <span class="src degraded">degraded 代理/沿用</span>
+        <span class="src manual">manual 待人工</span>
+        <span class="src missing">missing 無資料</span>
+      </p>
     </section>
 
     <section class="card">
       <h2>各科別分數趨勢</h2>
       <canvas id="trendChart"></canvas>
-    </section>
-
-    <section class="card">
-      <h2>本月因子細項</h2>
-      <canvas id="factorChart"></canvas>
-      <p class="legend">
-        來源：<span class="src real">real</span>
-        <span class="src degraded">degraded</span>
-        <span class="src manual">manual</span>
-        <span class="src missing">missing</span>
-      </p>
     </section>
 
     <section class="card" id="map-card">

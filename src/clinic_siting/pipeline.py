@@ -158,6 +158,6 @@ def run_pipeline(reference_dir, history_path, config_path,
 
     if site_dir is not None:
         from clinic_siting.site_export import build_site
-        build_site(history_path, site_dir)
+        build_site(history_path, site_dir, config)
 
     return snapshot

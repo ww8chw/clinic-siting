@@ -1,4 +1,5 @@
-// 診所選址評估前端：讀 data/history.json + data/geo.json，畫雷達／趨勢／因子圖 + 地圖
+// 診所選址評估前端：讀 data/history.json + data/geo.json
+// 顯示排名、各科加權拆解、因子原始數據、趨勢、地圖
 "use strict";
 
 const SPECIALTY_LABELS = {
@@ -24,19 +25,15 @@ const FACTOR_LABELS = {
   visibility: "能見度",
 };
 
-const SOURCE_COLORS = {
-  real: "#16a34a",
-  degraded: "#d97706",
-  manual: "#6366f1",
-  missing: "#9ca3af",
+const SOURCE_LABELS = {
+  real: "real", degraded: "degraded", manual: "manual", missing: "missing",
 };
 
-const SERIES_COLORS = [
-  "#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed",
-];
+const SERIES_COLORS = ["#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed"];
 
-function specLabel(key) { return SPECIALTY_LABELS[key] || key; }
-function factorLabel(key) { return FACTOR_LABELS[key] || key; }
+function specLabel(k) { return SPECIALTY_LABELS[k] || k; }
+function factorLabel(k) { return FACTOR_LABELS[k] || k; }
+function fmt(n) { return n == null ? "—" : (Math.round(n * 10) / 10).toFixed(1); }
 
 async function loadJSON(path, fallback) {
   try {
@@ -58,29 +55,74 @@ function renderMeta(payload) {
   }
 }
 
-function renderRadar(radar) {
-  const ctx = document.getElementById("radarChart");
-  if (!radar.labels.length) return;
-  new Chart(ctx, {
-    type: "radar",
-    data: {
-      labels: radar.labels.map(specLabel),
-      datasets: [{
-        label: "適合度",
-        data: radar.scores,
-        backgroundColor: "rgba(37,99,235,0.18)",
-        borderColor: "#2563eb",
-        pointBackgroundColor: "#2563eb",
-      }],
-    },
-    options: {
-      responsive: true,
-      scales: { r: { suggestedMin: 0, suggestedMax: 100 } },
-    },
-  });
+// 排名：用最新趨勢值排序
+function renderRanking(payload) {
+  const el = document.getElementById("ranking");
+  const trend = payload.trend || { dates: [], specialties: {} };
+  const n = trend.dates.length;
+  if (!n) { el.textContent = "尚無資料"; return; }
+  const rows = Object.entries(trend.specialties)
+    .map(([k, arr]) => [k, arr[n - 1]])
+    .filter(([, v]) => v != null)
+    .sort((a, b) => b[1] - a[1]);
+  const max = rows.length ? rows[0][1] : 100;
+  el.innerHTML = rows.map(([k, v], i) => `
+    <div class="rank-row">
+      <span class="rank-no">${i + 1}</span>
+      <span class="rank-name">${specLabel(k)}</span>
+      <span class="rank-bar"><span style="width:${(v / max * 100).toFixed(1)}%"></span></span>
+      <span class="rank-score">${fmt(v)}</span>
+    </div>`).join("");
 }
 
-function renderTrend(trend) {
+// 各科加權拆解表
+function renderBreakdown(payload) {
+  const breakdowns = payload.breakdowns || {};
+  const names = Object.keys(breakdowns);
+  const sel = document.getElementById("specialty-select");
+  const tbody = document.querySelector("#breakdown-table tbody");
+  const tfoot = document.querySelector("#breakdown-table tfoot");
+  if (!names.length) { tbody.innerHTML = "<tr><td colspan='4'>尚無資料</td></tr>"; return; }
+
+  // 預設選總分最高的科別
+  const ranked = names.slice().sort(
+    (a, b) => breakdowns[b].total - breakdowns[a].total);
+  sel.innerHTML = ranked.map(k => `<option value="${k}">${specLabel(k)}</option>`).join("");
+
+  function draw(name) {
+    const bd = breakdowns[name];
+    const rows = bd.rows.slice().sort((a, b) => b.contribution - a.contribution);
+    tbody.innerHTML = rows.map(r => `
+      <tr class="${r.weight === 0 ? 'muted' : ''}">
+        <td>${factorLabel(r.factor)}</td>
+        <td>${r.level}<span class="wnum">(${r.weight})</span></td>
+        <td>${fmt(r.score)}</td>
+        <td><span class="contrib-bar"><span style="width:${Math.min(r.contribution / bd.total * 100, 100).toFixed(1)}%"></span></span>${fmt(r.contribution)}</td>
+      </tr>`).join("");
+    tfoot.innerHTML = `<tr><th colspan="3">總分（加權平均）</th><th>${fmt(bd.total)}</th></tr>`;
+  }
+
+  sel.onchange = () => draw(sel.value);
+  draw(ranked[0]);
+}
+
+// 因子原始數據表
+function renderFactorTable(payload) {
+  const tbody = document.querySelector("#factor-table tbody");
+  const factors = payload.factors || [];
+  if (!factors.length) { tbody.innerHTML = "<tr><td colspan='5'>尚無資料</td></tr>"; return; }
+  tbody.innerHTML = factors.map(f => `
+    <tr>
+      <td>${factorLabel(f.factor)}</td>
+      <td>${f.raw_text}</td>
+      <td class="basis">${f.basis_text}</td>
+      <td>${fmt(f.score)}</td>
+      <td><span class="src ${f.source}">${SOURCE_LABELS[f.source] || f.source}</span></td>
+    </tr>`).join("");
+}
+
+function renderTrend(payload) {
+  const trend = payload.trend || { dates: [], specialties: {} };
   const ctx = document.getElementById("trendChart");
   if (!trend.dates.length) return;
   const names = Object.keys(trend.specialties);
@@ -95,32 +137,7 @@ function renderTrend(trend) {
   new Chart(ctx, {
     type: "line",
     data: { labels: trend.dates, datasets },
-    options: {
-      responsive: true,
-      scales: { y: { suggestedMin: 0, suggestedMax: 100 } },
-    },
-  });
-}
-
-function renderFactors(factors) {
-  const ctx = document.getElementById("factorChart");
-  if (!factors.length) return;
-  new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: factors.map(f => factorLabel(f.factor)),
-      datasets: [{
-        label: "因子分數",
-        data: factors.map(f => f.score),
-        backgroundColor: factors.map(f => SOURCE_COLORS[f.source] || "#9ca3af"),
-      }],
-    },
-    options: {
-      responsive: true,
-      indexAxis: "y",
-      scales: { x: { suggestedMin: 0, suggestedMax: 100 } },
-      plugins: { legend: { display: false } },
-    },
+    options: { responsive: true, scales: { y: { suggestedMin: 0, suggestedMax: 100 } } },
   });
 }
 
@@ -131,8 +148,7 @@ function renderMap(payload, geo) {
 
   const map = L.map("map").setView(center, 14);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: "&copy; OpenStreetMap",
+    maxZoom: 19, attribution: "&copy; OpenStreetMap",
   }).addTo(map);
 
   L.marker(center).addTo(map).bindPopup("候選點").openPopup();
@@ -148,9 +164,8 @@ function renderMap(payload, geo) {
   Object.entries(groups).forEach(([key, cfg]) => {
     (geo[key] || []).forEach(p => {
       if (p.lat == null || p.lon == null) return;
-      L.circleMarker([p.lat, p.lon], {
-        radius: 5, color: cfg.color, fillOpacity: 0.7,
-      }).addTo(map).bindPopup(`${cfg.label}${p.name ? "：" + p.name : ""}`);
+      L.circleMarker([p.lat, p.lon], { radius: 5, color: cfg.color, fillOpacity: 0.7 })
+        .addTo(map).bindPopup(`${cfg.label}${p.name ? "：" + p.name : ""}`);
     });
   });
 }
@@ -158,14 +173,15 @@ function renderMap(payload, geo) {
 async function main() {
   const payload = await loadJSON("data/history.json", {
     meta: {}, trend: { dates: [], specialties: {} },
-    radar: { labels: [], scores: [] }, factors: [],
+    factors: [], breakdowns: {},
   });
   const geo = await loadJSON("data/geo.json", {});
 
   renderMeta(payload);
-  renderRadar(payload.radar);
-  renderTrend(payload.trend);
-  renderFactors(payload.factors);
+  renderRanking(payload);
+  renderBreakdown(payload);
+  renderFactorTable(payload);
+  renderTrend(payload);
   renderMap(payload, geo);
 }
 

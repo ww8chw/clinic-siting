@@ -127,3 +127,74 @@ def build_factors(raw: dict) -> dict[str, FactorResult]:
 def factor_scores(factors: dict[str, FactorResult]) -> dict[str, float]:
     """抽出純分數 dict 餵給 scoring engine。"""
     return {name: r.score for name, r in factors.items()}
+
+
+def factor_explanation(name: str, raw: dict) -> dict:
+    """回傳該因子的原始數據與換算依據文字：{raw, basis}。
+    單一真相源——說明每個 0–100 分數背後量到什麼、用什麼門檻換算。"""
+    g = raw.get
+
+    if name == "purchasing_power":
+        v = g("weighted_median_income")
+        return {
+            "raw": f"戶中位所得 {v:,.0f} 千元" if v is not None else "無資料",
+            "basis": f"線性映射 {INCOME_LO:.0f}–{INCOME_HI:.0f} 千元 → 0–100",
+        }
+    if name == "population_density":
+        v = g("population")
+        return {
+            "raw": f"區人口 {v:,.0f} 人" if v is not None else "無資料",
+            "basis": f"線性映射 {POP_LO:,.0f}–{POP_HI:,.0f} 人 → 0–100",
+        }
+    if name == "competition":
+        c = g("competition_count")
+        if c is None:
+            return {"raw": "無資料", "basis": "沿用上次快照值或中性 50"}
+        demand = (g("population") or 0) * VISIT_RATE
+        per = demand / c if c else 0.0
+        return {
+            "raw": f"3km 內同業 {c} 家｜月需求估 {demand:,.0f} 人次（每家 {per:,.0f}）",
+            "basis": (f"每家需求量映射 {DEMAND_PER_CLINIC_LO:.0f}–{DEMAND_PER_CLINIC_HI:.0f}"
+                      f" → 0–100（需求>供給的群聚為加分，過密才扣分）"),
+        }
+    if name == "complementary_anchors":
+        v = g("anchor_count")
+        return {
+            "raw": f"3km 內藥局/醫院 {v} 家" if v is not None else "無資料",
+            "basis": f"線性映射 {ANCHOR_LO:.0f}–{ANCHOR_HI:.0f} 家 → 0–100",
+        }
+    if name == "convenience_density":
+        v = g("convenience_count")
+        return {
+            "raw": f"1km 內超商 {v} 家" if v is not None else "無資料",
+            "basis": f"線性映射 {CONVENIENCE_LO:.0f}–{CONVENIENCE_HI:.0f} 家 → 0–100",
+        }
+    if name == "business_density":
+        v = g("business_count")
+        return {
+            "raw": f"1km 內餐飲 {v} 家（商業活動代理）" if v is not None else "無資料",
+            "basis": (f"線性映射 {BUSINESS_LO:.0f}–{BUSINESS_HI:.0f} 家 → 0–100"
+                      f"（OSM 代理、無全量稅籍，標 degraded）"),
+        }
+    if name == "land_use_mix":
+        v = g("landuse_types")
+        return {
+            "raw": f"3km 內土地使用類型 {v} 種" if v is not None else "無資料",
+            "basis": f"線性映射 {LANDUSE_LO:.0f}–{LANDUSE_HI:.0f} 種 → 0–100",
+        }
+    if name == "accessibility":
+        t = g("transit_count")
+        if t is None:
+            return {"raw": "無資料", "basis": "沿用上次快照值或中性 50"}
+        d = g("drive_time_min")
+        dtxt = f"｜車程 {d:.0f} 分" if d is not None else ""
+        return {
+            "raw": f"1km 內公車站 {t} 站{dtxt}",
+            "basis": (f"公車站映射 0–{TRANSIT_HI:.0f} 站；車程 {DRIVE_MIN_LO:.0f}–"
+                      f"{DRIVE_MIN_HI:.0f} 分（反向）取平均"),
+        }
+    if name in ("age_gender", "day_night_gap"):
+        return {"raw": "尚無資料來源", "basis": "中性 50（待補單齡人口／晝夜信令）"}
+    if name in ("redevelopment_stage", "visibility"):
+        return {"raw": "待人工填入", "basis": "中性 50（手動因子，未來由介面覆寫）"}
+    return {"raw": "—", "basis": "—"}

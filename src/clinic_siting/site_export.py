@@ -4,8 +4,11 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from clinic_siting.analysis.factors import ALL_FACTORS
+from clinic_siting.analysis.factors import ALL_FACTORS, factor_explanation
 from clinic_siting.data_sources import geocode
+
+# 數值權重 → 等級標籤（對齊 config/specialties.yaml 的 weight_levels）
+WEIGHT_LABELS = {5: "最高", 4: "高", 3: "中", 2: "低", 0: "無"}
 
 
 def _load_snapshots(history_path) -> list[dict]:
@@ -44,21 +47,60 @@ def latest_radar(snapshots: list[dict]) -> dict:
     return {"labels": labels, "scores": [scores[n] for n in labels]}
 
 
-def latest_factor_bars(snapshots: list[dict]) -> list[dict]:
-    """最新一筆的因子長條資料，依 ALL_FACTORS 順序。"""
+def latest_factor_table(snapshots: list[dict]) -> list[dict]:
+    """最新一筆的因子明細：原始數據、換算依據、正規化分、來源（依 ALL_FACTORS 順序）。"""
     if not snapshots:
         return []
-    factors = snapshots[-1].get("factors", {})
-    bars = []
+    snap = snapshots[-1]
+    factors = snap.get("factors", {})
+    raw = snap.get("raw", {})
+    rows = []
     for name in ALL_FACTORS:
         f = factors.get(name)
         if f is None:
             continue
-        bars.append({"factor": name, "score": f["score"], "source": f["source"]})
-    return bars
+        exp = factor_explanation(name, raw)
+        rows.append({
+            "factor": name,
+            "score": f["score"],
+            "source": f["source"],
+            "raw_text": exp["raw"],
+            "basis_text": exp["basis"],
+        })
+    return rows
 
 
-def build_payload(snapshots: list[dict]) -> dict:
+def specialty_breakdowns(snapshots: list[dict], config) -> dict:
+    """最新一筆各科的加權拆解：每因子 權重×因子分÷總權重=貢獻，加總=總分。
+
+    回傳 {科別: {total, rows: [{factor, weight, level, score, contribution}]}}。
+    config 為 None 時回傳 {}。"""
+    if not snapshots or config is None:
+        return {}
+    factor_score = {n: f["score"] for n, f in snapshots[-1].get("factors", {}).items()}
+    out: dict[str, dict] = {}
+    for name, weights in config.specialties.items():
+        total_w = sum(weights.values())
+        rows = []
+        for factor in ALL_FACTORS:
+            w = weights.get(factor, 0)
+            score = factor_score.get(factor)
+            contribution = (score * w / total_w) if (total_w and score is not None) else 0.0
+            rows.append({
+                "factor": factor,
+                "weight": w,
+                "level": WEIGHT_LABELS.get(w, str(w)),
+                "score": score,
+                "contribution": round(contribution, 2),
+            })
+        out[name] = {
+            "total": round(sum(r["contribution"] for r in rows), 2),
+            "rows": rows,
+        }
+    return out
+
+
+def build_payload(snapshots: list[dict], config=None) -> dict:
     """組前端 history.json 主體（不含 geo）。"""
     return {
         "generated": datetime.now().isoformat(timespec="seconds"),
@@ -68,17 +110,18 @@ def build_payload(snapshots: list[dict]) -> dict:
         },
         "trend": trend_series(snapshots),
         "radar": latest_radar(snapshots),
-        "factors": latest_factor_bars(snapshots),
+        "factors": latest_factor_table(snapshots),
+        "breakdowns": specialty_breakdowns(snapshots, config),
     }
 
 
-def build_site(history_path, site_dir) -> None:
+def build_site(history_path, site_dir, config=None) -> None:
     """讀 jsonl → 寫 site_dir/data/history.json 與 geo.json。"""
     snapshots = _load_snapshots(history_path)
     data_dir = Path(site_dir) / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    payload = build_payload(snapshots)
+    payload = build_payload(snapshots, config)
     (data_dir / "history.json").write_text(
         json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
