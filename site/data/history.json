@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-31T22:21:37",
+  "generated": "2026-06-01T09:01:41",
   "meta": {
     "address": "桃園市龜山區樂善二路503號",
     "latlon": [
@@ -9,71 +9,92 @@
   },
   "trend": {
     "dates": [
-      "2026-05-31"
+      "2026-05-31",
+      "2026-06-01"
     ],
     "specialties": {
       "family_medicine": [
+        70.17936243376712,
         70.17936243376712
       ],
       "functional_medicine": [
+        69.11723804847564,
         69.11723804847564
       ],
       "weight_loss": [
+        69.73421332369476,
         69.73421332369476
       ],
       "psychiatry": [
+        70.9456218286834,
         70.9456218286834
       ],
       "aesthetics": [
+        71.10750694850846,
         71.10750694850846
       ]
     }
   },
   "factor_trend": {
     "dates": [
-      "2026-05-31"
+      "2026-05-31",
+      "2026-06-01"
     ],
     "factors": {
       "population_density": [
+        55.6208,
         55.6208
       ],
       "age_gender": [
+        89.22999999999999,
         89.22999999999999
       ],
       "day_night_gap": [
+        89.44239771857914,
         89.44239771857914
       ],
       "school_proximity": [
+        66.66666666666666,
         66.66666666666666
       ],
       "purchasing_power": [
+        48.48864668483197,
         48.48864668483197
       ],
       "business_density": [
+        37.5,
         37.5
       ],
       "land_use_mix": [
+        20.0,
         20.0
       ],
       "competition": [
+        75.69319492502882,
         75.69319492502882
       ],
       "competition_aesthetic": [
+        100.0,
         100.0
       ],
       "complementary_anchors": [
+        95.0,
         95.0
       ],
       "convenience_density": [
+        80.0,
         80.0
       ],
       "accessibility": [
+        100.0,
         100.0
       ],
       "redevelopment_stage": [
+        97.5,
         97.5
       ],
       "visibility": [
+        50.0,
         50.0
       ]
     }
@@ -101,9 +122,9 @@
       "source": "real",
       "raw_text": "區人口 189,052 人｜所在里 5,166 戶、約 21,461 人（估）",
       "basis_text": "線性映射 50,000–300,000 人 → 0–100（里級戶數為財政部實數、人口按戶數比例估算）",
-      "prev_score": null,
-      "delta": null,
-      "delta_pct": null
+      "prev_score": 55.6208,
+      "delta": 0.0,
+      "delta_pct": 0.0
     },
     {
       "factor": "age_gender",
@@ -111,9 +132,9 @@
       "source": "real",
       "raw_text": "壯年 25–49 占 56.2%、女性占 51.4%（村里 22,507 人）",
       "basis_text": "自費客群代理：壯年占比映射 30%–55%、女性占比映射 45%–55%，加權 70%:30% → 0–100",
-      "prev_score": null,
-      "delta": null,
-      "delta_pct": null
+      "prev_score": 89.22999999999999,
+      "delta": 0.0,
+      "delta_pct": 0.0
     },
     {
       "factor": "day_night_gap",
@@ -121,9 +142,9 @@
       "source": "real",
       "raw_text": "營業家數每千人為全國 0.86 倍（日夜均衡）",
       "basis_text": "比值=1 日夜最均衡得分最高；偏離以 |ln(比值)| 線性扣分",
-      "prev_score": null,
-      "delta": null,
-      "delta_pct": null
+      "prev_score": 89.44239771857914,
+      "delta": 0.0,
+      "delta_pct": 0.0
     },
     {
       "factor": "school_proximity",
@@ -131,9 +152,9 @@
       "source": "real",
       "raw_text": "步行 1km 內學校 1 所",
       "basis_text": "加成型：無學校中性 50，每多 1 所往上加，3 所滿分（OSM amenity=school，日間人流/年輕家庭代理）",
-      "prev_score": null,
-      "delta": null,
-      "delta_pct": null
+      "prev_score": 66.66666666666666,
+      "delta": 0.0,
+      "delta_pct": 0.0
     },
     {
       "factor": "purchasing_power",
@@ -141,19 +162,19 @@
       "source": "real",
       "raw_text": "戶中位所得 568 千元",
       "basis_text": "線性映射 350–800 千元 → 0–100",
-      "prev_score": null,
-      "delta": null,
-      "delta_pct": null
+      "prev_score": 48.48864668483197,
+      "delta": 0.0,
+      "delta_pct": 0.0
     },
     {
       "factor": "business_density",
       "score": 37.5,
       "source": "degraded",
-      "raw_text": "1km 內餐飲 15 家（商業活動代理）",
+      "raw_text": "無資料",
       "basis_text": "線性映射 0–40 家 → 0–100（OSM 代理、無全量稅籍，標 degraded）",
-      "prev_score": null,
-      "delta": null,
-      "delta_pct": null
+      "prev_score": 37.5,
+      "delta": 0.0,
+      "delta_pct": 0.0
     },
     {
       "factor": "land_use_mix",
@@ -161,9 +182,9 @@
       "source": "real",
       "raw_text": "3km 內土地使用類型 2 種",
       "basis_text": "線性映射 1–6 種 → 0–100",
-      "prev_score": null,
-      "delta": null,
-      "delta_pct": null
+      "prev_score": 20.0,
+      "delta": 0.0,
+      "delta_pct": 0.0
     },
     {
       "factor": "competition",
@@ -171,9 +192,9 @@
       "source": "real",
       "raw_text": "3km 內同業 11 家（距離加權有效 5.8 家）｜月需求估 3,781 人次（每家 654）",
       "basis_text": "近者競爭強：步行 1km 內權重 1.0，至車程 3km 線性衰減至 0.2；有效家數映射 200–800 → 0–100",
-      "prev_score": null,
-      "delta": null,
-      "delta_pct": null
+      "prev_score": 75.69319492502882,
+      "delta": 0.0,
+      "delta_pct": 0.0
     },
     {
       "factor": "competition_aesthetic",
@@ -181,9 +202,9 @@
       "source": "real",
       "raw_text": "3km 內醫美/皮膚科診所 1 家（距離加權有效 0.3 家）｜月需求估 3,781 人次（每家 10,803）",
       "basis_text": "醫美科專用競爭池（醫美/醫學美容診所＋整形外科＋皮膚科；不含純美容業）；近者競爭強：步行 1km 內權重 1.0，至車程 3km 線性衰減至 0.2；有效家數映射 200–800 → 0–100",
-      "prev_score": null,
-      "delta": null,
-      "delta_pct": null
+      "prev_score": 100.0,
+      "delta": 0.0,
+      "delta_pct": 0.0
     },
     {
       "factor": "complementary_anchors",
@@ -191,19 +212,19 @@
       "source": "real",
       "raw_text": "3km 內藥局/醫院 20 家（距離加權有效 9.5 家）",
       "basis_text": "近者綜效強：步行 1km 內權重 1.0，至車程 3km 線性衰減至 0.2；有效家數映射 0–10 → 0–100",
-      "prev_score": null,
-      "delta": null,
-      "delta_pct": null
+      "prev_score": 95.0,
+      "delta": 0.0,
+      "delta_pct": 0.0
     },
     {
       "factor": "convenience_density",
       "score": 80.0,
-      "source": "real",
-      "raw_text": "1km 內超商 20 家",
+      "source": "degraded",
+      "raw_text": "無資料",
       "basis_text": "線性映射 0–25 家 → 0–100",
-      "prev_score": null,
-      "delta": null,
-      "delta_pct": null
+      "prev_score": 80.0,
+      "delta": 0.0,
+      "delta_pct": 0.0
     },
     {
       "factor": "accessibility",
@@ -211,9 +232,9 @@
       "source": "real",
       "raw_text": "1km 內公車站 50 站",
       "basis_text": "公車站映射 0–20 站；車程 5–30 分（反向）取平均",
-      "prev_score": null,
-      "delta": null,
-      "delta_pct": null
+      "prev_score": 100.0,
+      "delta": 0.0,
+      "delta_pct": 0.0
     },
     {
       "factor": "redevelopment_stage",
@@ -221,9 +242,9 @@
       "source": "degraded",
       "raw_text": "區內成交屋齡中位 1 年",
       "basis_text": "實價登錄屋齡映射 0–40 年（反向，越新越高）；區級代理標 degraded",
-      "prev_score": null,
-      "delta": null,
-      "delta_pct": null
+      "prev_score": 97.5,
+      "delta": 0.0,
+      "delta_pct": 0.0
     },
     {
       "factor": "visibility",
@@ -231,9 +252,9 @@
       "source": "manual",
       "raw_text": "無臨街道路資料",
       "basis_text": "中性 50（待 OSM 道路或人工覆寫）",
-      "prev_score": null,
-      "delta": null,
-      "delta_pct": null
+      "prev_score": 50.0,
+      "delta": 0.0,
+      "delta_pct": 0.0
     }
   ],
   "breakdowns": {
