@@ -27,7 +27,7 @@ git add site/data history.jsonl
 if git diff --cached --quiet; then
   echo "無資料變動，略過 commit" >>"$LOG"
 else
-  git commit -m "data: 本機月度刷新 $(date +%F) [skip ci]" >>"$LOG" 2>&1
+  git commit -m "data: 本機月度刷新 $(date +%F)" >>"$LOG" 2>&1
   git push origin main >>"$LOG" 2>&1
   echo "已 push，GitHub Actions 將重新部署" >>"$LOG"
 fi
