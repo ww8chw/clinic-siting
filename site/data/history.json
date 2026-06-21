@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-01T09:01:41",
+  "generated": "2026-06-21T15:04:02",
   "meta": {
     "address": "桃園市龜山區樂善二路503號",
     "latlon": [
@@ -10,90 +10,111 @@
   "trend": {
     "dates": [
       "2026-05-31",
-      "2026-06-01"
+      "2026-06-01",
+      "2026-06-21"
     ],
     "specialties": {
       "family_medicine": [
         70.17936243376712,
-        70.17936243376712
+        70.17936243376712,
+        68.95843220120899
       ],
       "functional_medicine": [
         69.11723804847564,
-        69.11723804847564
+        69.11723804847564,
+        67.6589047151423
       ],
       "weight_loss": [
         69.73421332369476,
-        69.73421332369476
+        69.73421332369476,
+        68.48421332369477
       ],
       "psychiatry": [
         70.9456218286834,
-        70.9456218286834
+        70.9456218286834,
+        69.53536541842698
       ],
       "aesthetics": [
         71.10750694850846,
-        71.10750694850846
+        71.10750694850846,
+        70.04367716127442
       ]
     }
   },
   "factor_trend": {
     "dates": [
       "2026-05-31",
-      "2026-06-01"
+      "2026-06-01",
+      "2026-06-21"
     ],
     "factors": {
       "population_density": [
+        55.6208,
         55.6208,
         55.6208
       ],
       "age_gender": [
         89.22999999999999,
+        89.22999999999999,
         89.22999999999999
       ],
       "day_night_gap": [
+        89.44239771857914,
         89.44239771857914,
         89.44239771857914
       ],
       "school_proximity": [
         66.66666666666666,
+        66.66666666666666,
         66.66666666666666
       ],
       "purchasing_power": [
+        48.48864668483197,
         48.48864668483197,
         48.48864668483197
       ],
       "business_density": [
         37.5,
-        37.5
+        37.5,
+        40.0
       ],
       "land_use_mix": [
         20.0,
-        20.0
+        20.0,
+        0.0
       ],
       "competition": [
+        75.69319492502882,
         75.69319492502882,
         75.69319492502882
       ],
       "competition_aesthetic": [
         100.0,
+        100.0,
         100.0
       ],
       "complementary_anchors": [
+        95.0,
         95.0,
         95.0
       ],
       "convenience_density": [
         80.0,
+        80.0,
         80.0
       ],
       "accessibility": [
+        100.0,
         100.0,
         100.0
       ],
       "redevelopment_stage": [
         97.5,
+        97.5,
         97.5
       ],
       "visibility": [
+        50.0,
         50.0,
         50.0
       ]
@@ -108,11 +129,11 @@
       "aesthetics"
     ],
     "scores": [
-      70.17936243376712,
-      69.11723804847564,
-      69.73421332369476,
-      70.9456218286834,
-      71.10750694850846
+      68.95843220120899,
+      67.6589047151423,
+      68.48421332369477,
+      69.53536541842698,
+      70.04367716127442
     ]
   },
   "factors": [
@@ -168,23 +189,23 @@
     },
     {
       "factor": "business_density",
-      "score": 37.5,
+      "score": 40.0,
       "source": "degraded",
-      "raw_text": "無資料",
+      "raw_text": "1km 內餐飲 16 家（商業活動代理）",
       "basis_text": "線性映射 0–40 家 → 0–100（OSM 代理、無全量稅籍，標 degraded）",
       "prev_score": 37.5,
-      "delta": 0.0,
-      "delta_pct": 0.0
+      "delta": 2.5,
+      "delta_pct": 6.7
     },
     {
       "factor": "land_use_mix",
-      "score": 20.0,
+      "score": 0.0,
       "source": "real",
-      "raw_text": "3km 內土地使用類型 2 種",
+      "raw_text": "3km 內土地使用類型 1 種",
       "basis_text": "線性映射 1–6 種 → 0–100",
       "prev_score": 20.0,
-      "delta": 0.0,
-      "delta_pct": 0.0
+      "delta": -20.0,
+      "delta_pct": -100.0
     },
     {
       "factor": "competition",
@@ -219,8 +240,8 @@
     {
       "factor": "convenience_density",
       "score": 80.0,
-      "source": "degraded",
-      "raw_text": "無資料",
+      "source": "real",
+      "raw_text": "1km 內超商 20 家",
       "basis_text": "線性映射 0–25 家 → 0–100",
       "prev_score": 80.0,
       "delta": 0.0,
@@ -259,7 +280,7 @@
   ],
   "breakdowns": {
     "family_medicine": {
-      "total": 70.18,
+      "total": 68.95,
       "rows": [
         {
           "factor": "population_density",
@@ -300,15 +321,15 @@
           "factor": "business_density",
           "weight": 3,
           "level": "中",
-          "score": 37.5,
-          "contribution": 2.62
+          "score": 40.0,
+          "contribution": 2.79
         },
         {
           "factor": "land_use_mix",
           "weight": 3,
           "level": "中",
-          "score": 20.0,
-          "contribution": 1.4
+          "score": 0.0,
+          "contribution": 0.0
         },
         {
           "factor": "competition",
@@ -362,7 +383,7 @@
       ]
     },
     "functional_medicine": {
-      "total": 69.13,
+      "total": 67.67,
       "rows": [
         {
           "factor": "population_density",
@@ -403,15 +424,15 @@
           "factor": "business_density",
           "weight": 3,
           "level": "中",
-          "score": 37.5,
-          "contribution": 3.12
+          "score": 40.0,
+          "contribution": 3.33
         },
         {
           "factor": "land_use_mix",
           "weight": 3,
           "level": "中",
-          "score": 20.0,
-          "contribution": 1.67
+          "score": 0.0,
+          "contribution": 0.0
         },
         {
           "factor": "competition",
@@ -465,7 +486,7 @@
       ]
     },
     "weight_loss": {
-      "total": 69.73,
+      "total": 68.48,
       "rows": [
         {
           "factor": "population_density",
@@ -506,15 +527,15 @@
           "factor": "business_density",
           "weight": 3,
           "level": "中",
-          "score": 37.5,
-          "contribution": 2.68
+          "score": 40.0,
+          "contribution": 2.86
         },
         {
           "factor": "land_use_mix",
           "weight": 3,
           "level": "中",
-          "score": 20.0,
-          "contribution": 1.43
+          "score": 0.0,
+          "contribution": 0.0
         },
         {
           "factor": "competition",
@@ -568,7 +589,7 @@
       ]
     },
     "psychiatry": {
-      "total": 70.94,
+      "total": 69.53,
       "rows": [
         {
           "factor": "population_density",
@@ -609,15 +630,15 @@
           "factor": "business_density",
           "weight": 2,
           "level": "低",
-          "score": 37.5,
-          "contribution": 1.92
+          "score": 40.0,
+          "contribution": 2.05
         },
         {
           "factor": "land_use_mix",
           "weight": 3,
           "level": "中",
-          "score": 20.0,
-          "contribution": 1.54
+          "score": 0.0,
+          "contribution": 0.0
         },
         {
           "factor": "competition",
@@ -671,7 +692,7 @@
       ]
     },
     "aesthetics": {
-      "total": 71.11,
+      "total": 70.04,
       "rows": [
         {
           "factor": "population_density",
@@ -712,15 +733,15 @@
           "factor": "business_density",
           "weight": 4,
           "level": "高",
-          "score": 37.5,
-          "contribution": 3.19
+          "score": 40.0,
+          "contribution": 3.4
         },
         {
           "factor": "land_use_mix",
           "weight": 3,
           "level": "中",
-          "score": 20.0,
-          "contribution": 1.28
+          "score": 0.0,
+          "contribution": 0.0
         },
         {
           "factor": "competition",
