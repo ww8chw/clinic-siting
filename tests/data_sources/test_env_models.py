@@ -1,4 +1,4 @@
-from clinic_siting.models import Place, TransitStop, Clinic
+from site_siting.models import Place, TransitStop, Clinic
 
 
 def test_place_defaults():

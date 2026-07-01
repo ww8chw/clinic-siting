@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import requests
 
-from clinic_siting.data_sources.http import USER_AGENT, get_json
-from clinic_siting.models import TransitStop
+from site_siting.data_sources.http import USER_AGENT, get_json
+from site_siting.models import TransitStop
 
 TDX_TOKEN_URL = ("https://tdx.transportdata.tw/auth/realms/TDXConnect/"
                  "protocol/openid-connect/token")

@@ -1,4 +1,4 @@
-from clinic_siting.data_sources.realprice import (
+from site_siting.data_sources.realprice import (
     roc_to_year,
     parse_lvr_main_csv,
     district_median_building_age,

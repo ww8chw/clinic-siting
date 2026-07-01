@@ -1,4 +1,4 @@
-from clinic_siting.data_sources.moi_agegender import (
+from site_siting.data_sources.moi_agegender import (
     aggregate_shares,
     collect_village_shares,
     build_url,

@@ -1,5 +1,5 @@
-from clinic_siting.models import SpecialtyScore
-from clinic_siting.scoring.config import SpecialtyConfig
+from site_siting.models import SpecialtyScore
+from site_siting.scoring.config import SpecialtyConfig
 
 
 def score_specialty(normalized_factors: dict[str, float],
@@ -24,6 +24,12 @@ def score_specialty(normalized_factors: dict[str, float],
         score=sum(contributions.values()),
         factor_contributions=contributions,
     )
+
+
+def score_industry(normalized_factors: dict[str, float],
+                   weights: dict[str, int]) -> SpecialtyScore:
+    """行業計分：與 score_specialty 相同的加權平均邏輯（0–100）。"""
+    return score_specialty(normalized_factors, weights)
 
 
 def score_all_specialties(normalized_factors: dict[str, float],

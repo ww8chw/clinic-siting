@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from clinic_siting.data_sources.google_distance import parse_distance
+from site_siting.data_sources.google_distance import parse_distance
 
 FIX = Path(__file__).resolve().parents[1] / "fixtures" / "distance_matrix.json"
 

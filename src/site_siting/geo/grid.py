@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 
-from clinic_siting.geo.distance import haversine_km
+from site_siting.geo.distance import haversine_km
 
 
 def tile_centers(center: tuple[float, float],

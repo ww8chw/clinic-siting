@@ -15,7 +15,7 @@ echo "===== $(date '+%Y-%m-%d %H:%M:%S') 開始刷新 =====" >>"$LOG"
 git pull --rebase --autostash origin main >>"$LOG" 2>&1 || true
 
 # 抓資料 + 算分 + 重建站
-if PYTHONPATH=src "$REPO/.venv/bin/python" -m clinic_siting >>"$LOG" 2>&1; then
+if PYTHONPATH=src "$REPO/.venv/bin/python" -m site_siting >>"$LOG" 2>&1; then
   echo "刷新成功" >>"$LOG"
 else
   echo "!! 刷新失敗（見上方錯誤）；保留現有資料不 commit" >>"$LOG"

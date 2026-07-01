@@ -7,12 +7,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from clinic_siting.pipeline import run_pipeline
+from site_siting.pipeline import run_pipeline
 
 _ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_DIR = _ROOT / "data" / "reference"
 HISTORY_PATH = _ROOT / "history.jsonl"
-CONFIG_PATH = _ROOT / "config" / "specialties.yaml"
+CONFIG_PATH = _ROOT / "config" / "industries.yaml"
 SITE_DIR = _ROOT / "site"
 
 
@@ -26,8 +26,9 @@ def run_refresh(live: bool = True,
 
 def main():
     snap = run_refresh()
-    for name, score in sorted(snap["scores"].items(), key=lambda x: -x[1]):
-        print(f"{name:20s} {score:5.1f}")
+    rows = [(iid, d["score"]) for iid, d in snap["industries"].items()]
+    for iid, score in sorted(rows, key=lambda x: -x[1]):
+        print(f"{iid:20s} {score:5.1f}")
 
 
 if __name__ == "__main__":

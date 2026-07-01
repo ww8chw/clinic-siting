@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from clinic_siting.geo.distance import haversine_km
-from clinic_siting.geo.radius import points_within_radius
+from site_siting.geo.distance import haversine_km
+from site_siting.geo.radius import points_within_radius
 
 # 雙半徑：步行商圈 1km、車程商圈 3km
 WALK_KM = 1.0

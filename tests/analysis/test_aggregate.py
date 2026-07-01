@@ -1,4 +1,4 @@
-from clinic_siting.analysis.aggregate import (
+from site_siting.analysis.aggregate import (
     WALK_KM,
     DRIVE_KM,
     COMPETITION_FLOOR,

@@ -1,4 +1,4 @@
-from clinic_siting.geo.radius import points_within_radius
+from site_siting.geo.radius import points_within_radius
 
 
 def test_filters_points_inside_radius():

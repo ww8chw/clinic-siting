@@ -1,4 +1,4 @@
-from clinic_siting.analysis.factors import (
+from site_siting.analysis.factors import (
     ALL_FACTORS,
     FactorResult,
     build_factors,
@@ -15,7 +15,7 @@ FULL_RAW = {
     "weighted_median_income": 600.0,   # 千元
     "population": 189052,
     "households": 87815,
-    "competition_count": 5,
+    "competition_pools": [{"count": 5, "weighted": 5}],
     "anchor_count": 8,
     "convenience_count": 6,
     "business_count": 40,
@@ -25,10 +25,10 @@ FULL_RAW = {
 }
 
 
-def test_build_factors_covers_all_fourteen():
+def test_build_factors_covers_all_thirteen():
     f = build_factors(FULL_RAW)
     assert set(f.keys()) == set(ALL_FACTORS)
-    assert len(ALL_FACTORS) == 14
+    assert len(ALL_FACTORS) == 13
     for r in f.values():
         assert isinstance(r, FactorResult)
         assert 0.0 <= r.score <= 100.0
@@ -73,8 +73,8 @@ def test_anchors_use_weighted_effective_count():
 
 def test_competition_uses_weighted_effective_count():
     # 同樣 10 家，但距離加權後有效家數僅 4 → 競爭較輕、分數較高
-    base = dict(FULL_RAW, competition_count=10)
-    weighted = dict(base, competition_weighted=4.0)
+    base = dict(FULL_RAW, competition_pools=[{"count": 10, "weighted": 10}])
+    weighted = dict(FULL_RAW, competition_pools=[{"count": 10, "weighted": 4.0}])
     s_raw = build_factors(base)["competition"].score
     s_w = build_factors(weighted)["competition"].score
     assert s_w > s_raw
@@ -82,33 +82,21 @@ def test_competition_uses_weighted_effective_count():
 
 
 def test_competition_cluster_beats_oversaturation():
-    cluster = dict(FULL_RAW, competition_count=5)
-    oversat = dict(FULL_RAW, competition_count=30)
+    cluster = dict(FULL_RAW, competition_pools=[{"count": 5, "weighted": 5}])
+    oversat = dict(FULL_RAW, competition_pools=[{"count": 30, "weighted": 30}])
     c = build_factors(cluster)["competition"].score
     o = build_factors(oversat)["competition"].score
     assert c > o
 
 
-def test_competition_aesthetic_real_when_count_present():
-    raw = dict(FULL_RAW, competition_aesthetic_count=40)
-    f = build_factors(raw)["competition_aesthetic"]
-    assert f.source == "real"
-    assert 0.0 <= f.score <= 100.0
-
-
-def test_competition_aesthetic_missing_without_count():
-    f = build_factors(FULL_RAW)["competition_aesthetic"]
-    assert f.source == "missing"
-    assert f.score == 50.0
-
-
-def test_competition_aesthetic_uses_weighted_effective_count():
-    base = dict(FULL_RAW, competition_aesthetic_count=20)
-    weighted = dict(base, competition_aesthetic_weighted=8.0)
-    s_raw = build_factors(base)["competition_aesthetic"].score
-    s_w = build_factors(weighted)["competition_aesthetic"].score
-    # 加權後有效家數較少 → 競爭較輕 → 分數較高
-    assert s_w > s_raw
+def test_competition_multi_pool_takes_strictest():
+    # 雙池：一般池寬鬆、醫美池密集 → 取最嚴格（最低分）
+    single = dict(FULL_RAW, competition_pools=[{"count": 3, "weighted": 3}])
+    dual = dict(FULL_RAW, competition_pools=[
+        {"count": 3, "weighted": 3}, {"count": 30, "weighted": 30}])
+    s_single = build_factors(single)["competition"].score
+    s_dual = build_factors(dual)["competition"].score
+    assert s_dual < s_single
 
 
 def test_factor_scores_returns_plain_floats():

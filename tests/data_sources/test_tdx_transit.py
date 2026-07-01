@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from clinic_siting.data_sources.tdx_transit import parse_bus_stops, TDX_TOKEN_URL
-from clinic_siting.models import TransitStop
+from site_siting.data_sources.tdx_transit import parse_bus_stops, TDX_TOKEN_URL
+from site_siting.models import TransitStop
 
 FIX = Path(__file__).resolve().parents[1] / "fixtures" / "tdx_bus_stops.json"
 

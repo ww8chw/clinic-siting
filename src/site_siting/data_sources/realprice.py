@@ -8,7 +8,7 @@ from statistics import median
 
 import requests
 
-from clinic_siting.data_sources.http import USER_AGENT
+from site_siting.data_sources.http import USER_AGENT
 
 # 內政部不動產交易實價查詢服務網——分季全國大量下載
 _DOWNLOAD_URL = "https://plvr.land.moi.gov.tw/DownloadSeason"

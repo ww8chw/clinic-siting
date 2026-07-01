@@ -3,32 +3,32 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from clinic_siting.analysis.aggregate import (
+from site_siting.analysis.aggregate import (
     WALK_KM, DRIVE_KM, count_within, weighted_count_within)
-from clinic_siting.analysis.competition import classify_place
-from clinic_siting.geo.distance import haversine_km
-from clinic_siting.geo.grid import tile_centers
-from clinic_siting.analysis.factors import build_factors, factor_scores
-from clinic_siting.data_sources import (
+from site_siting.geo.distance import haversine_km
+from site_siting.analysis.factors import build_factors, factor_scores
+from site_siting.data_sources import (
     env,
     fia_business,
     geocode,
-    google_places,
     moi_agegender,
     osm_poi,
     osm_road,
     realprice,
     tdx_transit,
 )
-from clinic_siting.data_sources.reference import (
+from site_siting.data_sources.competitors import scan_pool, scan_anchors
+from site_siting.data_sources.reference import (
     parse_income_csv,
     parse_population_csv,
     district_income_summary,
     village_summary,
 )
-from clinic_siting.scoring.config import load_specialty_config
-from clinic_siting.scoring.engine import score_all_specialties
-from clinic_siting.snapshot import append_snapshot, load_last_snapshot, fill_degraded
+from site_siting.scoring.config import load_industry_config
+from site_siting.scoring.engine import score_industry
+from site_siting.snapshot import (
+    append_snapshot, load_last_snapshot,
+    fill_degraded_location, fill_degraded_industry)
 
 INCOME_DISTRICT = "桃園市龜山區"
 POP_REGION = "龜山區"
@@ -40,50 +40,30 @@ _WALK_M = int(WALK_KM * 1000)
 _DRIVE_M = int(DRIVE_KM * 1000)
 _VISIBILITY_M = 150          # 能見度只看店面臨街範圍
 
-# 競爭掃描：分區網格突破 Google searchNearby 單次 20 筆上限
-# 廣納各型別後以 classify_place 分流（台灣診所多為 medical_clinic，僅查 doctor 會漏）
-_COMP_TYPES = ["doctor", "medical_clinic", "dentist", "beauty_salon", "spa",
-               "skin_care_clinic", "hospital", "nail_salon", "hair_care",
-               "wellness_center"]
-_COMP_STEP_KM = 1.2          # 網格間距
-_COMP_SUB_M = 900            # 每格子查詢半徑（略大於半格對角，確保不漏）
+def collect_industry(center: tuple[float, float], profile) -> tuple[dict, dict]:
+    """依 profile 掃競爭池與互補錨點；回傳 (raw, geo)。"""
+    raw: dict = {}
+    geo: dict = {}
+    pools_out = []
+    competitors_geo: list[dict] = []
+    for pool in profile.competitors:
+        pts = scan_pool(center, pool)
+        cnt = count_within(center, pts, DRIVE_KM)
+        wt = round(weighted_count_within(center, pts, DRIVE_KM), 2)
+        pools_out.append({"pool": pool.get("pool", "同業"),
+                          "count": cnt, "weighted": wt})
+        competitors_geo.extend(pts)
+    if pools_out:
+        raw["competition_pools"] = pools_out
+        geo["competitors"] = competitors_geo
 
-
-def _scan_competitors(center: tuple[float, float], api_key: str):
-    """分區網格掃描 3km 內競爭點位，依座標去重後分流成 (western, aesthetic)。
-
-    western＝西醫一般診所（家醫/功能/減重/精神競爭池）；
-    aesthetic＝醫美/美容（醫美科競爭池）。牙醫/中醫/醫院/其他不計入競爭。"""
-    seen: dict = {}
-    for la, lo in tile_centers(center, DRIVE_KM, _COMP_STEP_KM):
-        try:
-            resp = google_places.fetch_search_nearby(
-                _COMP_TYPES, la, lo, _COMP_SUB_M, api_key)
-        except Exception:
-            continue
-        for p in google_places.parse_places(resp):
-            if not (p.lat and p.lon):
-                continue
-            d = haversine_km(center[0], center[1], p.lat, p.lon)
-            if d > DRIVE_KM:
-                continue
-            seen[(round(p.lat, 5), round(p.lon, 5))] = (
-                p, round(d, 2), classify_place(p.name, p.types))
-
-    western: list[dict] = []
-    aesthetic: list[dict] = []
-    for p, d, cat in seen.values():
-        pt = {"lat": p.lat, "lon": p.lon, "name": p.name, "dist_km": d}
-        if getattr(p, "address", ""):
-            pt["address"] = p.address
-        if getattr(p, "rating", None) is not None:
-            pt["rating"] = p.rating
-            pt["rating_count"] = getattr(p, "rating_count", None)
-        if cat == "western":
-            western.append(pt)
-        elif cat == "aesthetic":
-            aesthetic.append(pt)
-    return western, aesthetic
+    anchors = scan_anchors(center, profile.anchors)
+    if anchors:
+        raw["anchor_count"] = count_within(center, anchors, DRIVE_KM)
+        raw["anchor_weighted"] = round(
+            weighted_count_within(center, anchors, DRIVE_KM), 2)
+        geo["anchors"] = anchors
+    return raw, geo
 
 
 def collect_offline(reference_dir,
@@ -128,41 +108,12 @@ def _points(objs) -> list[dict]:
     return out
 
 
-def collect_live(center: tuple[float, float]) -> tuple[dict, dict]:
-    """嘗試線上抓取；回傳 (raw 計數, geo 點位)。
+def collect_location(center: tuple[float, float]) -> tuple[dict, dict]:
+    """嘗試線上抓取「地點因子」（全行業共用）；回傳 (raw 計數, geo 點位)。
+    競爭者/互補錨點改由 collect_industry 依 profile 掃描，本函式不再處理。
     每來源失敗則略過該 key（交給 factors/snapshot 降級）。"""
     raw: dict = {}
     geo: dict = {}
-    google_key = env.get_key("GOOGLE_MAPS_API_KEY")
-
-    if google_key:
-        try:
-            # 分區網格掃描＋分類，分別算西醫一般診所與醫美/美容競爭
-            western, aesthetic = _scan_competitors(center, google_key)
-            raw["competition_count"] = count_within(center, western, DRIVE_KM)
-            raw["competition_weighted"] = round(
-                weighted_count_within(center, western, DRIVE_KM), 2)
-            raw["competition_aesthetic_count"] = count_within(
-                center, aesthetic, DRIVE_KM)
-            raw["competition_aesthetic_weighted"] = round(
-                weighted_count_within(center, aesthetic, DRIVE_KM), 2)
-            geo["clinics"] = western
-            geo["aesthetic"] = aesthetic
-        except Exception:
-            pass
-        try:
-            resp = google_places.fetch_search_nearby(
-                ["pharmacy", "hospital"], center[0], center[1], _DRIVE_M, google_key)
-            anchors = _points(google_places.parse_places(resp))
-            for a in anchors:
-                a["dist_km"] = round(
-                    haversine_km(center[0], center[1], a["lat"], a["lon"]), 2)
-            raw["anchor_count"] = count_within(center, anchors, DRIVE_KM)
-            raw["anchor_weighted"] = round(
-                weighted_count_within(center, anchors, DRIVE_KM), 2)
-            geo["anchors"] = anchors
-        except Exception:
-            pass
 
     try:
         q = osm_poi.build_query("shop", "convenience", center[0], center[1], _WALK_M)
@@ -266,14 +217,13 @@ def run_pipeline(reference_dir, history_path, config_path,
                  live: bool = False,
                  center: tuple[float, float] = geocode.SITE_LATLON,
                  site_dir=None) -> dict:
-    """collect → build_factors → fill_degraded → score → 組 snapshot → append。
-    給 site_dir 時，append 後重建靜態站資料。"""
+    """collect_location（共用地點因子）→ 逐行業 collect_industry → 計分 →
+    組 location+industries 兩層 snapshot → append。給 site_dir 時重建靜態站。"""
     raw = collect_offline(reference_dir)
-    geo: dict = {}
     if live:
-        live_raw, geo = collect_live(center)
-        raw.update(live_raw)
-        # 晝夜比值：營業家數（line）+ 區人口（collect_offline）合併後才能算
+        loc_raw, _ = collect_location(center)
+        raw.update(loc_raw)
+        # 晝夜比值：營業家數 + 區人口（collect_offline）合併後才能算
         if "fia_business_count" in raw and "fia_business_total" in raw:
             ratio = fia_business.business_ratio(
                 raw["fia_business_count"], raw["fia_business_total"],
@@ -281,25 +231,50 @@ def run_pipeline(reference_dir, history_path, config_path,
             if ratio is not None:
                 raw["business_ratio"] = round(ratio, 3)
 
-    factors = build_factors(raw)
+    config = load_industry_config(config_path)
     last = load_last_snapshot(history_path)
-    factors = fill_degraded(factors, last)
 
-    config = load_specialty_config(config_path)
-    results = score_all_specialties(factor_scores(factors), config)
+    # 地點因子（全行業共用）：此時競爭/錨點為 missing，只取地點 11 因子顯示
+    loc_factors = build_factors(raw)
+    loc_factors = fill_degraded_location(loc_factors, last)
+    location = {
+        "factors": {n: {"score": r.score, "source": r.source}
+                    for n, r in loc_factors.items()
+                    if n not in ("competition", "complementary_anchors")},
+        "raw": raw,
+    }
+
+    industries: dict = {}
+    for iid, prof in config.industries.items():
+        ind_raw = dict(raw)
+        ind_geo: dict = {}
+        if live:
+            more_raw, ind_geo = collect_industry(center, prof)
+            ind_raw.update(more_raw)
+        factors = build_factors(ind_raw)
+        factors = fill_degraded_industry(factors, last, iid)
+        score = score_industry(factor_scores(factors), prof.weights)
+        industries[iid] = {
+            "group": prof.group,
+            "label": prof.label,
+            "score": round(score.score, 2),
+            "factors": {n: {"score": r.score, "source": r.source}
+                        for n, r in factors.items()},
+            "raw": {k: ind_raw[k] for k in
+                    ("competition_pools", "anchor_count", "anchor_weighted")
+                    if k in ind_raw},
+            "geo": ind_geo,
+        }
 
     snapshot = {
         "date": date.today().isoformat(),
-        "scores": {name: s.score for name, s in results.items()},
-        "factors": {name: {"score": r.score, "source": r.source}
-                    for name, r in factors.items()},
-        "raw": raw,
-        "geo": geo,
+        "location": location,
+        "industries": industries,
     }
     append_snapshot(history_path, snapshot)
 
     if site_dir is not None:
-        from clinic_siting.site_export import build_site
+        from site_siting.site_export import build_site
         build_site(history_path, site_dir, config)
 
     return snapshot

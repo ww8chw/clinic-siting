@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from clinic_siting.data_sources.reference import (
+from site_siting.data_sources.reference import (
     parse_income_csv,
     parse_population_csv,
     district_income_summary,

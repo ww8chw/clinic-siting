@@ -1,5 +1,5 @@
-from clinic_siting.geo.grid import tile_centers
-from clinic_siting.geo.distance import haversine_km
+from site_siting.geo.grid import tile_centers
+from site_siting.geo.distance import haversine_km
 
 CENTER = (25.0461974, 121.3918275)
 

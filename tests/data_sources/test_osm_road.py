@@ -1,4 +1,4 @@
-from clinic_siting.data_sources.osm_road import (
+from site_siting.data_sources.osm_road import (
     build_nearest_road_query,
     parse_roads,
 )

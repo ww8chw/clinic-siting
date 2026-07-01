@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from clinic_siting.data_sources.http import post_json
+from site_siting.data_sources.http import post_json
 
 _OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 
