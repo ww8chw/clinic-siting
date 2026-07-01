@@ -7,7 +7,7 @@
       "dist_km": 2.95,
       "address": "242台灣新北市新莊區丹鳳里天祥街116號",
       "rating": 4.5,
-      "rating_count": 101
+      "rating_count": 102
     },
     {
       "lat": 25.0407944,
@@ -25,7 +25,7 @@
       "dist_km": 0.86,
       "address": "333台灣桃園市龜山區文青里文青二路13號",
       "rating": 4.5,
-      "rating_count": 279
+      "rating_count": 280
     },
     {
       "lat": 25.052635,
@@ -33,8 +33,8 @@
       "name": "欣庚診所（洗腎中心）",
       "dist_km": 2.49,
       "address": "333台灣桃園市龜山區大華里文化三路506號",
-      "rating": 4.7,
-      "rating_count": 43
+      "rating": 4.6,
+      "rating_count": 52
     },
     {
       "lat": 25.0536727,
@@ -43,7 +43,7 @@
       "dist_km": 1.23,
       "address": "333台灣桃園市龜山區長庚里樂學路512號",
       "rating": 5,
-      "rating_count": 207
+      "rating_count": 209
     },
     {
       "lat": 25.0568329,
@@ -52,7 +52,7 @@
       "dist_km": 2.73,
       "address": "333台灣桃園市龜山區文化里文化二路51號",
       "rating": 4.7,
-      "rating_count": 1453
+      "rating_count": 1455
     },
     {
       "lat": 25.0589311,
@@ -70,7 +70,7 @@
       "dist_km": 2.69,
       "address": "333台灣桃園市龜山區文化里文化二路59號",
       "rating": 4.6,
-      "rating_count": 375
+      "rating_count": 383
     },
     {
       "lat": 25.0576807,
@@ -79,7 +79,7 @@
       "dist_km": 2.94,
       "address": "33375台灣桃園市龜山區文化里復興一路220號",
       "rating": 3.9,
-      "rating_count": 421
+      "rating_count": 422
     },
     {
       "lat": 25.0585326,
@@ -88,7 +88,7 @@
       "dist_km": 2.56,
       "address": "333台灣桃園市龜山區文化里文化一路10巷41弄10號2樓",
       "rating": 4.8,
-      "rating_count": 99
+      "rating_count": 100
     },
     {
       "lat": 25.054620000000003,
@@ -97,7 +97,7 @@
       "dist_km": 1.88,
       "address": "333台灣桃園市龜山區文化里復興三路3之2號",
       "rating": 3.2,
-      "rating_count": 80
+      "rating_count": 81
     }
   ],
   "aesthetic": [
@@ -108,7 +108,7 @@
       "dist_km": 2.63,
       "address": "333台灣桃園市龜山區文化里文化二路90號1樓",
       "rating": 4.4,
-      "rating_count": 272
+      "rating_count": 273
     }
   ],
   "anchors": [
@@ -118,7 +118,7 @@
       "name": "長庚醫療財團法人林口長庚紀念醫院",
       "address": "333台灣桃園市龜山區公西里復興街5號",
       "rating": 3.4,
-      "rating_count": 3527,
+      "rating_count": 3537,
       "dist_km": 2.92
     },
     {
@@ -126,8 +126,8 @@
       "lon": 121.3685595,
       "name": "林口長庚醫院復健大樓",
       "address": "333台灣桃園市龜山區公西里復興街5號",
-      "rating": 3.7,
-      "rating_count": 261,
+      "rating": 3.8,
+      "rating_count": 271,
       "dist_km": 2.9
     },
     {
@@ -136,7 +136,7 @@
       "name": "林口長庚醫院兒童大樓",
       "address": "333台灣桃園市龜山區復興街5號",
       "rating": 2.9,
-      "rating_count": 136,
+      "rating_count": 140,
       "dist_km": 2.82
     },
     {
@@ -163,7 +163,7 @@
       "name": "陸教授神經科診所",
       "address": "333台灣桃園市龜山區文化里文化一路10巷41弄10號2樓",
       "rating": 4.8,
-      "rating_count": 99,
+      "rating_count": 100,
       "dist_km": 2.56
     },
     {
@@ -217,7 +217,7 @@
       "name": "永慶尖端醫療園區",
       "address": "333台灣桃園市龜山區樂善里文化一路15號",
       "rating": 4.7,
-      "rating_count": 22,
+      "rating_count": 23,
       "dist_km": 2.84
     },
     {
@@ -235,7 +235,7 @@
       "name": "美康健保藥局 文化店",
       "address": "333台灣桃園市龜山區大華里文化三路327號",
       "rating": 4.8,
-      "rating_count": 128,
+      "rating_count": 129,
       "dist_km": 2.86
     },
     {
@@ -253,7 +253,7 @@
       "name": "文青藥局",
       "address": "333台灣桃園市龜山區文青里文青路202號",
       "rating": 4.4,
-      "rating_count": 72,
+      "rating_count": 71,
       "dist_km": 0.78
     },
     {
