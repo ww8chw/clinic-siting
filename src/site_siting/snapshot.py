@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from clinic_siting.analysis.factors import FactorResult
+from site_siting.analysis.factors import FactorResult
 
 # 可沿用為降級值的來源（曾經是真實資料）
 _REUSABLE = {"real", "degraded"}

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from clinic_siting.analysis.aggregate import DRIVE_KM
-from clinic_siting.analysis.competition import classify_place
-from clinic_siting.geo.distance import haversine_km
-from clinic_siting.geo.grid import tile_centers
-from clinic_siting.data_sources import env, google_places, osm_poi
+from site_siting.analysis.aggregate import DRIVE_KM
+from site_siting.analysis.competition import classify_place
+from site_siting.geo.distance import haversine_km
+from site_siting.geo.grid import tile_centers
+from site_siting.data_sources import env, google_places, osm_poi
 
 _COMP_STEP_KM = 1.2
 _COMP_SUB_M = 900

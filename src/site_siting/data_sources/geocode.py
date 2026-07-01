@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from clinic_siting.data_sources.http import get_json
+from site_siting.data_sources.http import get_json
 
 SITE_ADDRESS = "桃園市龜山區樂善二路503號"
 SITE_LATLON = (25.0461974, 121.3918275)  # 由 Google Geocoding 取得、寫死

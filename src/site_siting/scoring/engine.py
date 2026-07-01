@@ -1,5 +1,5 @@
-from clinic_siting.models import SpecialtyScore
-from clinic_siting.scoring.config import SpecialtyConfig
+from site_siting.models import SpecialtyScore
+from site_siting.scoring.config import SpecialtyConfig
 
 
 def score_specialty(normalized_factors: dict[str, float],

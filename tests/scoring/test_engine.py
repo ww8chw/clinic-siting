@@ -1,7 +1,7 @@
 import pytest
 
-from clinic_siting.scoring.engine import score_specialty, score_all_specialties
-from clinic_siting.scoring.config import SpecialtyConfig
+from site_siting.scoring.engine import score_specialty, score_all_specialties
+from site_siting.scoring.config import SpecialtyConfig
 
 
 def _config():

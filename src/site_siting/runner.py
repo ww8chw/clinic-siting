@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from clinic_siting.pipeline import run_pipeline
+from site_siting.pipeline import run_pipeline
 
 _ROOT = Path(__file__).resolve().parents[2]
 REFERENCE_DIR = _ROOT / "data" / "reference"

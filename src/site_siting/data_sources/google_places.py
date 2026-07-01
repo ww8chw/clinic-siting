@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from clinic_siting.data_sources.http import post_json
-from clinic_siting.models import Place
+from site_siting.data_sources.http import post_json
+from site_siting.models import Place
 
 _SEARCH_TEXT_URL = "https://places.googleapis.com/v1/places:searchText"
 _SEARCH_NEARBY_URL = "https://places.googleapis.com/v1/places:searchNearby"

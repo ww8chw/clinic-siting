@@ -1,4 +1,4 @@
-from clinic_siting.data_sources.competitors import (
+from site_siting.data_sources.competitors import (
     scan_pool, scan_anchors)
 
 

@@ -4,8 +4,8 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from clinic_siting.analysis.factors import ALL_FACTORS, factor_explanation
-from clinic_siting.data_sources import geocode
+from site_siting.analysis.factors import ALL_FACTORS, factor_explanation
+from site_siting.data_sources import geocode
 
 # 數值權重 → 等級標籤（對齊 config/industries.yaml 的 weight_levels）
 WEIGHT_LABELS = {5: "最高", 4: "高", 3: "中", 2: "低", 0: "無"}

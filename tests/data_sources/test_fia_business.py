@@ -1,4 +1,4 @@
-from clinic_siting.data_sources.fia_business import (
+from site_siting.data_sources.fia_business import (
     count_in_rows,
     business_ratio,
 )

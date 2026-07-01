@@ -1,5 +1,5 @@
 from pathlib import Path
-from clinic_siting.scoring.config import load_industry_config
+from site_siting.scoring.config import load_industry_config
 
 CONFIG = Path(__file__).resolve().parents[2] / "config" / "industries.yaml"
 

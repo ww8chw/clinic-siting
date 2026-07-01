@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from clinic_siting.data_sources.geocode import parse_geocode, SITE_LATLON, SITE_ADDRESS
+from site_siting.data_sources.geocode import parse_geocode, SITE_LATLON, SITE_ADDRESS
 
 FIX = Path(__file__).resolve().parents[1] / "fixtures" / "geocode.json"
 

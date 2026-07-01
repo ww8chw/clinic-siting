@@ -1,4 +1,4 @@
-from clinic_siting.cli import run_demo
+from site_siting.cli import run_demo
 
 
 def test_run_demo_returns_all_industries_sorted():

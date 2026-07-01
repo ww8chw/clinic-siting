@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from clinic_siting.data_sources.google_places import parse_places
-from clinic_siting.models import Place
+from site_siting.data_sources.google_places import parse_places
+from site_siting.models import Place
 
 FIX = Path(__file__).resolve().parents[1] / "fixtures"
 

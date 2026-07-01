@@ -3,8 +3,8 @@ from __future__ import annotations
 import csv
 import io
 
-from clinic_siting.data_sources.http import get_text
-from clinic_siting.models import Clinic
+from site_siting.data_sources.http import get_text
+from site_siting.models import Clinic
 
 NHI_CLINIC_CSV_URL = ("https://info.nhi.gov.tw/api/iode0000s01/Dataset"
                       "?rId=A21030000I-D21004-009")

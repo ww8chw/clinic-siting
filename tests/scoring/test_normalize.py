@@ -1,4 +1,4 @@
-from clinic_siting.scoring.normalize import minmax_score
+from site_siting.scoring.normalize import minmax_score
 
 
 def test_value_at_low_bound_scores_zero():

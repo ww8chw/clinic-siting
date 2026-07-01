@@ -46,7 +46,7 @@ jobs:
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
           TDX_CLIENT_ID: ${{ secrets.TDX_CLIENT_ID }}
           TDX_CLIENT_SECRET: ${{ secrets.TDX_CLIENT_SECRET }}
-        run: python -m clinic_siting
+        run: python -m site_siting
 
       - name: Commit refreshed data
         if: github.event_name != 'push'

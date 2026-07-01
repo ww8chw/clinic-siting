@@ -1,7 +1,7 @@
 import shutil
 from pathlib import Path
 
-from clinic_siting.runner import run_refresh
+from site_siting.runner import run_refresh
 
 FIX = Path(__file__).resolve().parent / "fixtures"
 CONFIG = Path(__file__).resolve().parents[1] / "config" / "industries.yaml"

@@ -1,4 +1,4 @@
-from clinic_siting.geo.distance import haversine_km
+from site_siting.geo.distance import haversine_km
 
 Point = dict  # 需含 "lat", "lon" 鍵
 

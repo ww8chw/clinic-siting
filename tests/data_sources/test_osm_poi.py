@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from clinic_siting.data_sources.osm_poi import parse_overpass, build_query
-from clinic_siting.models import Place
+from site_siting.data_sources.osm_poi import parse_overpass, build_query
+from site_siting.models import Place
 
 FIX = Path(__file__).resolve().parents[1] / "fixtures" / "overpass_convenience.json"
 

@@ -3,11 +3,11 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from clinic_siting.analysis.aggregate import (
+from site_siting.analysis.aggregate import (
     WALK_KM, DRIVE_KM, count_within, weighted_count_within)
-from clinic_siting.geo.distance import haversine_km
-from clinic_siting.analysis.factors import build_factors, factor_scores
-from clinic_siting.data_sources import (
+from site_siting.geo.distance import haversine_km
+from site_siting.analysis.factors import build_factors, factor_scores
+from site_siting.data_sources import (
     env,
     fia_business,
     geocode,
@@ -17,16 +17,16 @@ from clinic_siting.data_sources import (
     realprice,
     tdx_transit,
 )
-from clinic_siting.data_sources.competitors import scan_pool, scan_anchors
-from clinic_siting.data_sources.reference import (
+from site_siting.data_sources.competitors import scan_pool, scan_anchors
+from site_siting.data_sources.reference import (
     parse_income_csv,
     parse_population_csv,
     district_income_summary,
     village_summary,
 )
-from clinic_siting.scoring.config import load_industry_config
-from clinic_siting.scoring.engine import score_industry
-from clinic_siting.snapshot import (
+from site_siting.scoring.config import load_industry_config
+from site_siting.scoring.engine import score_industry
+from site_siting.snapshot import (
     append_snapshot, load_last_snapshot,
     fill_degraded_location, fill_degraded_industry)
 
@@ -274,7 +274,7 @@ def run_pipeline(reference_dir, history_path, config_path,
     append_snapshot(history_path, snapshot)
 
     if site_dir is not None:
-        from clinic_siting.site_export import build_site
+        from site_siting.site_export import build_site
         build_site(history_path, site_dir, config)
 
     return snapshot

@@ -3,8 +3,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from clinic_siting.analysis.aggregate import WALK_KM, DRIVE_KM, COMPETITION_FLOOR
-from clinic_siting.scoring.normalize import minmax_score
+from site_siting.analysis.aggregate import WALK_KM, DRIVE_KM, COMPETITION_FLOOR
+from site_siting.scoring.normalize import minmax_score
 
 # 13 因子（順序對齊 config/industries.yaml）
 ALL_FACTORS = [

@@ -1,8 +1,8 @@
 import shutil
 from pathlib import Path
 
-from clinic_siting.pipeline import collect_offline, collect_industry, run_pipeline
-from clinic_siting.scoring.config import IndustryProfile
+from site_siting.pipeline import collect_offline, collect_industry, run_pipeline
+from site_siting.scoring.config import IndustryProfile
 
 FIX = Path(__file__).resolve().parent / "fixtures"
 CONFIG = Path(__file__).resolve().parents[1] / "config" / "industries.yaml"
@@ -24,7 +24,7 @@ def _make_reference_dir(tmp_path):
 
 
 def test_collect_industry_builds_pools(monkeypatch):
-    import clinic_siting.pipeline as pl
+    import site_siting.pipeline as pl
 
     def fake_scan_pool(center, pool, **kw):
         return [{"lat": 25.0, "lon": 121.0, "name": "x", "dist_km": 0.5}]

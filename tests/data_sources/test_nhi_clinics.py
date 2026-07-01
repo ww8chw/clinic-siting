@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from clinic_siting.data_sources.nhi_clinics import parse_nhi_csv
-from clinic_siting.models import Clinic
+from site_siting.data_sources.nhi_clinics import parse_nhi_csv
+from site_siting.models import Clinic
 
 FIX = Path(__file__).resolve().parents[1] / "fixtures" / "nhi_clinics_guishan_sample.csv"
 

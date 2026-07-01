@@ -1,4 +1,4 @@
-from clinic_siting.analysis.competition import classify_place
+from site_siting.analysis.competition import classify_place
 
 
 def test_western_general_clinic():

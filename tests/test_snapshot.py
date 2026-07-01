@@ -1,5 +1,5 @@
-from clinic_siting.analysis.factors import FactorResult
-from clinic_siting.snapshot import (
+from site_siting.analysis.factors import FactorResult
+from site_siting.snapshot import (
     append_snapshot,
     load_last_snapshot,
     fill_degraded,

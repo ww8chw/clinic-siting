@@ -1,4 +1,4 @@
-from clinic_siting.geo.distance import haversine_km
+from site_siting.geo.distance import haversine_km
 
 
 def test_zero_distance_same_point():

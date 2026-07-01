@@ -1,4 +1,4 @@
-from clinic_siting.analysis.factors import (
+from site_siting.analysis.factors import (
     ALL_FACTORS, build_factors, competition_pool_score)
 
 

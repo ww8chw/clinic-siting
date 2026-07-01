@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from clinic_siting.data_sources.http import get_json
+from site_siting.data_sources.http import get_json
 
 _URL = "https://maps.googleapis.com/maps/api/distancematrix/json"
 

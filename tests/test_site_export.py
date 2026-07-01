@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 
-from clinic_siting.scoring.config import load_industry_config
-from clinic_siting.site_export import build_payload, build_site
+from site_siting.scoring.config import load_industry_config
+from site_siting.site_export import build_payload, build_site
 
 CONFIG = load_industry_config(
     Path(__file__).resolve().parents[1] / "config" / "industries.yaml")
