@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from clinic_siting.analysis.aggregate import WALK_KM, DRIVE_KM, COMPETITION_FLOOR
 from clinic_siting.scoring.normalize import minmax_score
 
-# 14 因子（順序對齊 config/specialties.yaml）
+# 13 因子（順序對齊 config/industries.yaml）
 ALL_FACTORS = [
     "population_density",
     "age_gender",
@@ -16,7 +16,6 @@ ALL_FACTORS = [
     "business_density",
     "land_use_mix",
     "competition",
-    "competition_aesthetic",
     "complementary_anchors",
     "convenience_density",
     "accessibility",
@@ -76,13 +75,16 @@ class FactorResult:
     source: str  # real / degraded / manual / missing
 
 
-def _competition_score(population, count) -> float:
-    """同科別競爭：需求 vs 供給。需求>供給→群聚加分；過密才扣分。"""
+def competition_pool_score(population, count) -> float:
+    """單一競爭池：需求 vs 供給。需求>供給→群聚加分；過密才扣分。"""
     demand = population * VISIT_RATE
     if count == 0:
         return NO_COMPETITION_SCORE
     demand_per_clinic = demand / count
     return minmax_score(demand_per_clinic, DEMAND_PER_CLINIC_LO, DEMAND_PER_CLINIC_HI)
+
+
+_competition_score = competition_pool_score  # 舊名別名
 
 
 def road_visibility_score(highway: str, lanes) -> float:
@@ -154,26 +156,20 @@ def build_factors(raw: dict) -> dict[str, FactorResult]:
         lambda v: minmax_score(v, POP_LO, POP_HI),
     )
 
-    # 線上來源（缺漏 → missing，pipeline 層再決定是否沿用上次值）
-    # 優先用距離加權有效家數（近者競爭強）；無則退回原始家數
-    comp = raw.get("competition_weighted")
-    if comp is None:
-        comp = raw.get("competition_count")
-    if comp is not None:
-        score = _competition_score(raw.get("population", 0), comp)
-        out["competition"] = FactorResult(score, "real")
+    # 競爭：每 profile 宣告 1..n 池，各池算需求/供給分，取最嚴格（最低分）。
+    # 每池優先用距離加權有效家數（近者競爭強）；無則退回原始家數。
+    pools = raw.get("competition_pools")
+    if pools:
+        pop = raw.get("population", 0)
+        scores = []
+        for pl in pools:
+            eff = pl.get("weighted")
+            if eff is None:
+                eff = pl.get("count", 0)
+            scores.append(competition_pool_score(pop, eff))
+        out["competition"] = FactorResult(min(scores), "real")
     else:
         out["competition"] = FactorResult(NEUTRAL, "missing")
-
-    # 醫美/皮膚科競爭（醫美科專用）：同樣需求/供給模型，供給為醫療型醫美家數
-    comp_a = raw.get("competition_aesthetic_weighted")
-    if comp_a is None:
-        comp_a = raw.get("competition_aesthetic_count")
-    if comp_a is not None:
-        score = _competition_score(raw.get("population", 0), comp_a)
-        out["competition_aesthetic"] = FactorResult(score, "real")
-    else:
-        out["competition_aesthetic"] = FactorResult(NEUTRAL, "missing")
 
     # 互補錨點：優先用距離加權有效家數（近者綜效強）；無則退回原始家數
     anchor = raw.get("anchor_weighted")
@@ -276,37 +272,21 @@ def factor_explanation(name: str, raw: dict) -> dict:
                       f"（里級戶數為財政部實數、人口按戶數比例估算）"),
         }
     if name == "competition":
-        c = g("competition_count")
-        if c is None:
+        pools = raw.get("competition_pools")
+        if not pools:
             return {"raw": "無資料", "basis": "沿用上次快照值或中性 50"}
-        w = g("competition_weighted")
-        eff = w if w is not None else c
-        demand = (g("population") or 0) * VISIT_RATE
-        per = demand / eff if eff else 0.0
-        eff_txt = f"（距離加權有效 {w:.1f} 家）" if w is not None else ""
+        pop = raw.get("population") or 0
+        demand = pop * VISIT_RATE
+        parts = []
+        for pl in pools:
+            eff = pl.get("weighted", pl.get("count", 0))
+            per = demand / eff if eff else 0.0
+            tag = f"{pl.get('pool', '同業')}池 {pl.get('count', 0)} 家（每家 {per:,.0f}）"
+            parts.append(tag)
         return {
-            "raw": (f"3km 內同業 {c} 家{eff_txt}｜月需求估 {demand:,.0f} 人次"
-                    f"（每家 {per:,.0f}）"),
-            "basis": (f"近者競爭強：步行 {WALK_KM:.0f}km 內權重 1.0，至車程 "
-                      f"{DRIVE_KM:.0f}km 線性衰減至 {COMPETITION_FLOOR}；有效家數映射 "
-                      f"{DEMAND_PER_CLINIC_LO:.0f}–{DEMAND_PER_CLINIC_HI:.0f} → 0–100"),
-        }
-    if name == "competition_aesthetic":
-        c = g("competition_aesthetic_count")
-        if c is None:
-            return {"raw": "無資料", "basis": "沿用上次快照值或中性 50"}
-        w = g("competition_aesthetic_weighted")
-        eff = w if w is not None else c
-        demand = (g("population") or 0) * VISIT_RATE
-        per = demand / eff if eff else 0.0
-        eff_txt = f"（距離加權有效 {w:.1f} 家）" if w is not None else ""
-        return {
-            "raw": (f"3km 內醫美/皮膚科診所 {c} 家{eff_txt}｜月需求估 {demand:,.0f} 人次"
-                    f"（每家 {per:,.0f}）"),
-            "basis": (f"醫美科專用競爭池（醫美/醫學美容診所＋整形外科＋皮膚科；不含純美容業）；"
-                      f"近者競爭強：步行 {WALK_KM:.0f}km 內權重 1.0，至車程 "
-                      f"{DRIVE_KM:.0f}km 線性衰減至 {COMPETITION_FLOOR}；有效家數映射 "
-                      f"{DEMAND_PER_CLINIC_LO:.0f}–{DEMAND_PER_CLINIC_HI:.0f} → 0–100"),
+            "raw": "｜".join(parts) + f"｜月需求估 {demand:,.0f} 人次",
+            "basis": (f"每池需求/供給映射 {DEMAND_PER_CLINIC_LO:.0f}–"
+                      f"{DEMAND_PER_CLINIC_HI:.0f} → 0–100，多池取最嚴格（最低分）"),
         }
     if name == "complementary_anchors":
         v = g("anchor_count")
