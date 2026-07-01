@@ -32,14 +32,37 @@ def load_last_snapshot(path) -> dict | None:
 
 def fill_degraded(factors: dict[str, FactorResult],
                   last: dict | None) -> dict[str, FactorResult]:
-    """source==missing 且上次快照該因子有真值 → 沿用並標 degraded。"""
+    """source==missing 且上次快照該因子有真值 → 沿用並標 degraded（舊 schema）。"""
     if not last:
         return factors
-    last_factors = last.get("factors", {})
+    return _fill_from(factors, last.get("factors", {}))
+
+
+def fill_degraded_location(factors: dict[str, FactorResult],
+                           last: dict | None) -> dict[str, FactorResult]:
+    """新 schema：地點因子由上次快照 location.factors 沿用降級。"""
+    if not last:
+        return factors
+    prev = last.get("location", {}).get("factors", {})
+    return _fill_from(factors, prev)
+
+
+def fill_degraded_industry(factors: dict[str, FactorResult],
+                           last: dict | None,
+                           industry_id: str) -> dict[str, FactorResult]:
+    """新 schema：某行業因子由上次快照該行業 factors 沿用降級。"""
+    if not last:
+        return factors
+    prev = last.get("industries", {}).get(industry_id, {}).get("factors", {})
+    return _fill_from(factors, prev)
+
+
+def _fill_from(factors: dict[str, FactorResult],
+               prev: dict) -> dict[str, FactorResult]:
     for name, result in factors.items():
         if result.source != "missing":
             continue
-        prev = last_factors.get(name)
-        if prev and prev.get("source") in _REUSABLE:
-            factors[name] = FactorResult(prev["score"], "degraded")
+        p = prev.get(name)
+        if p and p.get("source") in _REUSABLE:
+            factors[name] = FactorResult(p["score"], "degraded")
     return factors

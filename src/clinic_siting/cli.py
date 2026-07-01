@@ -1,10 +1,10 @@
 from pathlib import Path
-from clinic_siting.scoring.config import load_specialty_config
-from clinic_siting.scoring.engine import score_all_specialties
+from clinic_siting.scoring.config import load_industry_config
+from clinic_siting.scoring.engine import score_industry
 
-CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "specialties.yaml"
+CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "industries.yaml"
 
-# Plan 2 前的範例正規化因子值（0–100，負向因子已 invert）
+# 範例正規化因子值（0–100，負向因子已 invert）
 SAMPLE_FACTORS = {
     "population_density": 75.0,
     "age_gender": 70.0,
@@ -14,7 +14,6 @@ SAMPLE_FACTORS = {
     "business_density": 65.0,
     "land_use_mix": 60.0,
     "competition": 55.0,
-    "competition_aesthetic": 45.0,
     "complementary_anchors": 60.0,
     "convenience_density": 85.0,
     "accessibility": 70.0,
@@ -24,10 +23,10 @@ SAMPLE_FACTORS = {
 
 
 def run_demo():
-    config = load_specialty_config(CONFIG_PATH)
-    results = score_all_specialties(SAMPLE_FACTORS, config)
+    config = load_industry_config(CONFIG_PATH)
     ranking = sorted(
-        ((name, s.score) for name, s in results.items()),
+        ((iid, score_industry(SAMPLE_FACTORS, prof.weights).score)
+         for iid, prof in config.industries.items()),
         key=lambda x: x[1],
         reverse=True,
     )

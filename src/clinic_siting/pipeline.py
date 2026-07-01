@@ -24,9 +24,11 @@ from clinic_siting.data_sources.reference import (
     district_income_summary,
     village_summary,
 )
-from clinic_siting.scoring.config import load_specialty_config
-from clinic_siting.scoring.engine import score_all_specialties
-from clinic_siting.snapshot import append_snapshot, load_last_snapshot, fill_degraded
+from clinic_siting.scoring.config import load_industry_config
+from clinic_siting.scoring.engine import score_industry
+from clinic_siting.snapshot import (
+    append_snapshot, load_last_snapshot,
+    fill_degraded_location, fill_degraded_industry)
 
 INCOME_DISTRICT = "桃園市龜山區"
 POP_REGION = "龜山區"
@@ -215,14 +217,13 @@ def run_pipeline(reference_dir, history_path, config_path,
                  live: bool = False,
                  center: tuple[float, float] = geocode.SITE_LATLON,
                  site_dir=None) -> dict:
-    """collect → build_factors → fill_degraded → score → 組 snapshot → append。
-    給 site_dir 時，append 後重建靜態站資料。"""
+    """collect_location（共用地點因子）→ 逐行業 collect_industry → 計分 →
+    組 location+industries 兩層 snapshot → append。給 site_dir 時重建靜態站。"""
     raw = collect_offline(reference_dir)
-    geo: dict = {}
     if live:
-        live_raw, geo = collect_location(center)
-        raw.update(live_raw)
-        # 晝夜比值：營業家數（line）+ 區人口（collect_offline）合併後才能算
+        loc_raw, _ = collect_location(center)
+        raw.update(loc_raw)
+        # 晝夜比值：營業家數 + 區人口（collect_offline）合併後才能算
         if "fia_business_count" in raw and "fia_business_total" in raw:
             ratio = fia_business.business_ratio(
                 raw["fia_business_count"], raw["fia_business_total"],
@@ -230,20 +231,45 @@ def run_pipeline(reference_dir, history_path, config_path,
             if ratio is not None:
                 raw["business_ratio"] = round(ratio, 3)
 
-    factors = build_factors(raw)
+    config = load_industry_config(config_path)
     last = load_last_snapshot(history_path)
-    factors = fill_degraded(factors, last)
 
-    config = load_specialty_config(config_path)
-    results = score_all_specialties(factor_scores(factors), config)
+    # 地點因子（全行業共用）：此時競爭/錨點為 missing，只取地點 11 因子顯示
+    loc_factors = build_factors(raw)
+    loc_factors = fill_degraded_location(loc_factors, last)
+    location = {
+        "factors": {n: {"score": r.score, "source": r.source}
+                    for n, r in loc_factors.items()
+                    if n not in ("competition", "complementary_anchors")},
+        "raw": raw,
+    }
+
+    industries: dict = {}
+    for iid, prof in config.industries.items():
+        ind_raw = dict(raw)
+        ind_geo: dict = {}
+        if live:
+            more_raw, ind_geo = collect_industry(center, prof)
+            ind_raw.update(more_raw)
+        factors = build_factors(ind_raw)
+        factors = fill_degraded_industry(factors, last, iid)
+        score = score_industry(factor_scores(factors), prof.weights)
+        industries[iid] = {
+            "group": prof.group,
+            "label": prof.label,
+            "score": round(score.score, 2),
+            "factors": {n: {"score": r.score, "source": r.source}
+                        for n, r in factors.items()},
+            "raw": {k: ind_raw[k] for k in
+                    ("competition_pools", "anchor_count", "anchor_weighted")
+                    if k in ind_raw},
+            "geo": ind_geo,
+        }
 
     snapshot = {
         "date": date.today().isoformat(),
-        "scores": {name: s.score for name, s in results.items()},
-        "factors": {name: {"score": r.score, "source": r.source}
-                    for name, r in factors.items()},
-        "raw": raw,
-        "geo": geo,
+        "location": location,
+        "industries": industries,
     }
     append_snapshot(history_path, snapshot)
 

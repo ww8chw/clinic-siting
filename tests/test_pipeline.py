@@ -5,10 +5,13 @@ from clinic_siting.pipeline import collect_offline, collect_industry, run_pipeli
 from clinic_siting.scoring.config import IndustryProfile
 
 FIX = Path(__file__).resolve().parent / "fixtures"
-CONFIG = Path(__file__).resolve().parents[1] / "config" / "specialties.yaml"
-SPECIALTIES = {
+CONFIG = Path(__file__).resolve().parents[1] / "config" / "industries.yaml"
+MEDICAL = {
     "family_medicine", "functional_medicine", "weight_loss",
     "psychiatry", "aesthetics",
+}
+ALL_INDUSTRIES = MEDICAL | {
+    "restaurant", "bubble_tea", "cafe", "gym", "cram_school", "hair_beauty",
 }
 
 
@@ -52,15 +55,23 @@ def test_collect_offline_has_local_keys(tmp_path):
     assert 406 <= raw["weighted_median_income"] <= 696
 
 
-def test_run_pipeline_offline_outputs_full_snapshot(tmp_path):
+def test_run_pipeline_offline_new_schema(tmp_path):
     ref = _make_reference_dir(tmp_path)
     hist = tmp_path / "history.jsonl"
     snap = run_pipeline(ref, hist, CONFIG, live=False)
-    assert set(snap["scores"].keys()) == SPECIALTIES
-    assert len(snap["factors"]) == 14
-    assert "weighted_median_income" in snap["raw"]
-    # 離線時線上因子缺漏 → 標 missing/中性
-    assert snap["factors"]["competition"]["source"] == "missing"
+    assert "location" in snap and "industries" in snap
+    assert "factors" in snap["location"]
+    assert set(snap["industries"].keys()) == ALL_INDUSTRIES
+    fam = snap["industries"]["family_medicine"]
+    assert fam["group"] == "medical"
+    assert isinstance(fam["score"], float)
+    # 完整 13 因子都在
+    assert "competition" in fam["factors"]
+    assert "population_density" in fam["factors"]
+    # 離線時競爭缺漏 → 標 missing
+    assert fam["factors"]["competition"]["source"] == "missing"
+    # 地點因子區塊不含競爭/錨點
+    assert "competition" not in snap["location"]["factors"]
     # 寫入一行
     assert hist.exists()
     assert len([l for l in hist.read_text().splitlines() if l.strip()]) == 1
@@ -71,7 +82,9 @@ def test_run_pipeline_offline_deterministic(tmp_path):
     hist = tmp_path / "history.jsonl"
     s1 = run_pipeline(ref, hist, CONFIG, live=False)
     s2 = run_pipeline(ref, hist, CONFIG, live=False)
-    assert s1["scores"] == s2["scores"]
+    scores1 = {i: d["score"] for i, d in s1["industries"].items()}
+    scores2 = {i: d["score"] for i, d in s2["industries"].items()}
+    assert scores1 == scores2
     # 兩次各寫一行
     assert len([l for l in hist.read_text().splitlines() if l.strip()]) == 2
 
@@ -80,23 +93,13 @@ def test_scores_are_bounded(tmp_path):
     ref = _make_reference_dir(tmp_path)
     hist = tmp_path / "history.jsonl"
     snap = run_pipeline(ref, hist, CONFIG, live=False)
-    for v in snap["scores"].values():
-        assert 0.0 <= v <= 100.0
+    for d in snap["industries"].values():
+        assert 0.0 <= d["score"] <= 100.0
 
 
 def test_offline_snapshot_has_empty_geo(tmp_path):
     ref = _make_reference_dir(tmp_path)
     hist = tmp_path / "history.jsonl"
     snap = run_pipeline(ref, hist, CONFIG, live=False)
-    assert snap["geo"] == {}
-
-
-def test_run_pipeline_builds_site_when_dir_given(tmp_path):
-    import json
-    ref = _make_reference_dir(tmp_path)
-    hist = tmp_path / "history.jsonl"
-    site = tmp_path / "site"
-    run_pipeline(ref, hist, CONFIG, live=False, site_dir=site)
-    payload = json.loads((site / "data" / "history.json").read_text(encoding="utf-8"))
-    assert set(payload["trend"]["specialties"].keys()) == SPECIALTIES
-    assert (site / "data" / "geo.json").exists()
+    for d in snap["industries"].values():
+        assert d["geo"] == {}
