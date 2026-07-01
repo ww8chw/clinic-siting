@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>診所選址評估 — 龜山樂善二路</title>
+  <title>選址適合度評估 — 龜山樂善二路</title>
   <link rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
@@ -12,24 +12,31 @@
 </head>
 <body>
   <header>
-    <h1>診所選址適合度評估</h1>
+    <h1>選址適合度評估</h1>
     <p id="meta-line">載入中…</p>
     <p><span id="freshness" class="freshness"></span></p>
   </header>
 
   <main>
     <section class="card">
-      <h2>各科適合度排名</h2>
-      <p class="hint">總分 = 各因子正規化分數（0–100）× 該科權重，加權平均而得。點選下方科別可看完整拆解。</p>
+      <h2>選擇行業</h2>
+      <div class="select-row">
+        <label for="group-select">行業組：</label>
+        <select id="group-select"></select>
+      </div>
+      <div id="industry-tabs" class="tabs"></div>
+    </section>
+
+    <section class="card">
+      <h2>全行業適合度排名</h2>
+      <p class="hint">總分 = 各因子正規化分數（0–100）× 該行業權重，加權平均而得。點選上方行業可看完整拆解。</p>
       <div id="ranking"></div>
     </section>
 
     <section class="card">
-      <h2>各科分數運算明細</h2>
+      <h2 id="breakdown-title">加權運算明細</h2>
       <p class="hint">拖動「權重」欄的滑桿可即時試算：調整任一因子重要性後，下方總分會重算（純前端試算，不影響實際資料）。</p>
       <div class="select-row">
-        <label for="specialty-select">選擇科別：</label>
-        <select id="specialty-select"></select>
         <button id="whatif-reset" type="button" class="reset-btn" disabled>還原權重</button>
       </div>
       <div class="table-wrap">
@@ -47,9 +54,10 @@
     </section>
 
     <section class="card">
-      <h2>因子原始數據、換算依據與變化</h2>
+      <h2>地點因子（全行業共用）</h2>
+      <p class="hint">人口、消費力、交通等與地點綁定的因子，各行業共用同一組數據。</p>
       <div class="table-wrap">
-        <table id="factor-table">
+        <table id="location-factor-table">
           <thead>
             <tr>
               <th>因子</th><th>原始數據</th><th>換算依據</th>
@@ -68,16 +76,23 @@
     </section>
 
     <section class="card">
-      <h2>單因子分數趨勢</h2>
-      <div class="select-row">
-        <label for="factor-select">選擇因子：</label>
-        <select id="factor-select"></select>
+      <h2 id="industry-factor-title">行業因子</h2>
+      <p class="hint">競爭對手與互補錨點依所選行業而不同。</p>
+      <div class="table-wrap">
+        <table id="industry-factor-table">
+          <thead>
+            <tr>
+              <th>因子</th><th>原始數據</th><th>換算依據</th>
+              <th>正規化分</th><th>較上筆</th><th>來源</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
-      <canvas id="factorTrendChart"></canvas>
     </section>
 
     <section class="card">
-      <h2>各科別分數趨勢</h2>
+      <h2 id="trend-title">分數趨勢</h2>
       <canvas id="trendChart"></canvas>
     </section>
 
@@ -87,10 +102,9 @@
     </section>
 
     <section class="card">
-      <h2>3km 內西醫一般診所清單（<span id="clinic-count">0</span> 家）</h2>
-      <p class="hint">家醫/功能醫學/減重/精神科的競爭對手（排除牙醫、中醫、醫美、醫院）。</p>
+      <h2 id="competitor-title">3km 內競爭對手清單（<span id="competitor-count">0</span> 家）</h2>
       <div class="table-wrap">
-        <table id="clinic-table">
+        <table id="competitor-table">
           <thead>
             <tr><th>名稱</th><th>地址</th><th>距離</th><th>競爭權重</th><th>評分</th></tr>
           </thead>
@@ -100,20 +114,7 @@
     </section>
 
     <section class="card">
-      <h2>3km 內醫美/皮膚科診所競爭清單（<span id="aesthetic-count">0</span> 家）</h2>
-      <p class="hint">醫美科的競爭對手（醫美/醫學美容診所、整形外科、皮膚科；不含純美容沙龍）。</p>
-      <div class="table-wrap">
-        <table id="aesthetic-table">
-          <thead>
-            <tr><th>名稱</th><th>地址</th><th>距離</th><th>競爭權重</th><th>評分</th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>3km 內互補錨點清單（藥局／醫院，<span id="anchor-count">0</span> 家）</h2>
+      <h2>3km 內互補錨點清單（<span id="anchor-count">0</span> 家）</h2>
       <div class="table-wrap">
         <table id="anchor-table">
           <thead>

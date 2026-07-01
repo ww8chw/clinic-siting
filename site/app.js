@@ -1,39 +1,35 @@
-// 診所選址評估前端：讀 data/history.json + data/geo.json
-// 顯示排名、各科加權拆解、因子原始數據、趨勢、地圖
+// 選址評估前端：讀 data/history.json + data/geo.json
+// 依「行業組 → 行業」切換，顯示排名、加權拆解、地點/行業因子、趨勢、地圖
 "use strict";
 
-const SPECIALTY_LABELS = {
-  family_medicine: "家醫科",
-  functional_medicine: "功能醫學",
-  weight_loss: "減重",
-  psychiatry: "精神/身心",
-  aesthetics: "醫美",
+const GROUP_LABELS = {
+  medical: "醫療", food: "餐飲", fitness: "健身",
+  education: "教育", service: "服務",
 };
 
 const FACTOR_LABELS = {
   population_density: "人口密度",
   age_gender: "年齡/性別",
   day_night_gap: "晝夜落差",
+  school_proximity: "學校鄰近",
   purchasing_power: "消費力",
   business_density: "商業密度",
   land_use_mix: "土地混合",
-  competition: "西醫診所競爭",
-  competition_aesthetic: "醫美/皮膚科競爭",
+  competition: "競爭對手",
   complementary_anchors: "互補錨點",
   convenience_density: "超商密度",
   accessibility: "交通可及",
   redevelopment_stage: "重劃/屋齡",
   visibility: "能見度",
-  school_proximity: "學校鄰近",
 };
 
 const SOURCE_LABELS = {
   real: "real", degraded: "degraded", manual: "manual", missing: "missing",
 };
 
-const SERIES_COLORS = ["#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed"];
+const SERIES_COLORS = ["#2563eb", "#16a34a", "#d97706", "#dc2626", "#7c3aed", "#0891b2"];
 
-function specLabel(k) { return SPECIALTY_LABELS[k] || k; }
+function groupLabel(k) { return GROUP_LABELS[k] || k; }
 function factorLabel(k) { return FACTOR_LABELS[k] || k; }
 function fmt(n) { return n == null ? "—" : (Math.round(n * 10) / 10).toFixed(1); }
 
@@ -45,6 +41,18 @@ async function loadJSON(path, fallback) {
   } catch (e) {
     return fallback;
   }
+}
+
+// 攤平 groups → { iid: {group, ...entry} }，保留插入順序
+function flatIndustries(payload) {
+  const out = {};
+  const groups = payload.groups || {};
+  Object.entries(groups).forEach(([g, gd]) => {
+    Object.entries(gd.industries || {}).forEach(([iid, entry]) => {
+      out[iid] = { group: g, ...entry };
+    });
+  });
+  return out;
 }
 
 function renderMeta(payload) {
@@ -63,7 +71,7 @@ const STALE_DAYS = 40;
 function renderFreshness(payload) {
   const el = document.getElementById("freshness");
   if (!el) return;
-  const dates = (payload.trend && payload.trend.dates) || [];
+  const dates = payload.dates || [];
   const last = dates.length ? dates[dates.length - 1] : null;
   if (!last) { el.textContent = ""; return; }
   const ageDays = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
@@ -74,48 +82,48 @@ function renderFreshness(payload) {
   el.textContent = `資料更新於 ${last}（${ageTxt}）${stale ? "　⚠ 已逾 " + STALE_DAYS + " 天，建議重新刷新" : ""}`;
 }
 
-// 排名：用最新趨勢值排序
-function renderRanking(payload) {
+// 全行業排名：用最新分數排序（跨所有組），點選可切換至該行業
+function renderRanking(flat, onPick) {
   const el = document.getElementById("ranking");
-  const trend = payload.trend || { dates: [], specialties: {} };
-  const n = trend.dates.length;
-  if (!n) { el.textContent = "尚無資料"; return; }
-  const rows = Object.entries(trend.specialties)
-    .map(([k, arr]) => [k, arr[n - 1]])
-    .filter(([, v]) => v != null)
-    .sort((a, b) => b[1] - a[1]);
-  const max = rows.length ? rows[0][1] : 100;
-  el.innerHTML = rows.map(([k, v], i) => `
-    <div class="rank-row">
+  const rows = Object.entries(flat)
+    .map(([iid, d]) => [iid, d.label, d.group, d.score])
+    .filter(([, , , v]) => v != null)
+    .sort((a, b) => b[3] - a[3]);
+  if (!rows.length) { el.textContent = "尚無資料"; return; }
+  const max = rows[0][3] || 100;
+  el.innerHTML = rows.map(([iid, label, g, v], i) => `
+    <div class="rank-row rank-pick" data-iid="${iid}">
       <span class="rank-no">${i + 1}</span>
-      <span class="rank-name">${specLabel(k)}</span>
+      <span class="rank-name">${label}<span class="rank-group">${groupLabel(g)}</span></span>
       <span class="rank-bar"><span style="width:${(v / max * 100).toFixed(1)}%"></span></span>
       <span class="rank-score">${fmt(v)}</span>
     </div>`).join("");
+  el.querySelectorAll(".rank-pick").forEach(row => {
+    row.addEventListener("click", () => onPick(row.dataset.iid));
+  });
 }
 
 // 數值權重 → 等級標籤（對齊 config weight_levels）
 const WEIGHT_LEVEL = { 5: "最高", 4: "高", 3: "中", 2: "低", 1: "極低", 0: "無" };
 function levelLabel(w) { return WEIGHT_LEVEL[w] != null ? WEIGHT_LEVEL[w] : String(w); }
 
-// 各科加權拆解表 + what-if 權重試算滑桿
-function renderBreakdown(payload) {
-  const breakdowns = payload.breakdowns || {};
-  const names = Object.keys(breakdowns);
-  const sel = document.getElementById("specialty-select");
+// 單一行業加權拆解表 + what-if 權重試算滑桿
+function renderBreakdown(entry) {
   const tbody = document.querySelector("#breakdown-table tbody");
   const tfoot = document.querySelector("#breakdown-table tfoot");
   const resetBtn = document.getElementById("whatif-reset");
-  if (!names.length) { tbody.innerHTML = "<tr><td colspan='4'>尚無資料</td></tr>"; return; }
+  document.getElementById("breakdown-title").textContent =
+    `${entry.label}：加權運算明細`;
+  const bd = entry.breakdown;
+  if (!bd || !bd.rows || !bd.rows.length) {
+    tbody.innerHTML = "<tr><td colspan='4'>尚無資料</td></tr>";
+    tfoot.innerHTML = "";
+    if (resetBtn) resetBtn.disabled = true;
+    return;
+  }
 
-  // 預設選總分最高的科別
-  const ranked = names.slice().sort(
-    (a, b) => breakdowns[b].total - breakdowns[a].total);
-  sel.innerHTML = ranked.map(k => `<option value="${k}">${specLabel(k)}</option>`).join("");
-
-  // 目前科別的 what-if 權重狀態：factor -> 權重（初始＝原始權重）
-  let current = null;       // 科別名
-  let liveWeights = {};     // 試算中的權重
+  let liveWeights = {};
+  bd.rows.forEach(r => { liveWeights[r.factor] = r.weight; });
 
   function weightedTotal(rows, weights) {
     let num = 0, den = 0;
@@ -126,13 +134,10 @@ function renderBreakdown(payload) {
     return den ? num / den : 0;
   }
 
-  function rowsFor(name) { return breakdowns[name].rows; }
-
   function redraw() {
-    const rows = rowsFor(current);
+    const rows = bd.rows;
     const total = weightedTotal(rows, liveWeights);
-    const orig = breakdowns[current].total;
-    // 依「試算貢獻」排序
+    const orig = bd.total;
     const den = Object.values(liveWeights).reduce((a, b) => a + b, 0) || 1;
     const view = rows.map(r => ({
       ...r,
@@ -162,7 +167,6 @@ function renderBreakdown(payload) {
       `<th>${fmt(total)} ${diffTxt}</th></tr>`;
     if (resetBtn) resetBtn.disabled = !changed;
 
-    // 綁定滑桿
     tbody.querySelectorAll(".wslider").forEach(sl => {
       sl.addEventListener("input", () => {
         liveWeights[sl.dataset.factor] = parseInt(sl.value, 10);
@@ -171,16 +175,13 @@ function renderBreakdown(payload) {
     });
   }
 
-  function load(name) {
-    current = name;
-    liveWeights = {};
-    rowsFor(name).forEach(r => { liveWeights[r.factor] = r.weight; });
-    redraw();
+  if (resetBtn) {
+    resetBtn.onclick = () => {
+      bd.rows.forEach(r => { liveWeights[r.factor] = r.weight; });
+      redraw();
+    };
   }
-
-  sel.onchange = () => load(sel.value);
-  if (resetBtn) resetBtn.onclick = () => load(current);
-  load(ranked[0]);
+  redraw();
 }
 
 // 較上筆變化的文字（含漲跌色與比率）
@@ -194,12 +195,12 @@ function deltaCell(f) {
   return `<span class="delta ${cls}">${arrow} ${sign}${fmt(f.delta)}</span>${pct}`;
 }
 
-// 因子原始數據表
-function renderFactorTable(payload) {
-  const tbody = document.querySelector("#factor-table tbody");
-  const factors = payload.factors || [];
-  if (!factors.length) { tbody.innerHTML = "<tr><td colspan='6'>尚無資料</td></tr>"; return; }
-  tbody.innerHTML = factors.map(f => `
+// 通用因子明細表渲染（地點因子與行業因子共用）
+function renderFactorRows(tableSel, factors) {
+  const tbody = document.querySelector(`${tableSel} tbody`);
+  const list = factors || [];
+  if (!list.length) { tbody.innerHTML = "<tr><td colspan='6'>尚無資料</td></tr>"; return; }
+  tbody.innerHTML = list.map(f => `
     <tr>
       <td>${factorLabel(f.factor)}</td>
       <td>${f.raw_text}</td>
@@ -210,42 +211,10 @@ function renderFactorTable(payload) {
     </tr>`).join("");
 }
 
-// 單因子分數趨勢：下拉選因子，畫該因子跨快照折線
-function renderFactorTrend(payload) {
-  const ft = payload.factor_trend || { dates: [], factors: {} };
-  const sel = document.getElementById("factor-select");
-  const ctx = document.getElementById("factorTrendChart");
-  if (!ft.dates.length) return;
-
-  // 只列出有任一資料點的因子
-  const names = Object.keys(ft.factors).filter(
-    n => (ft.factors[n] || []).some(v => v != null));
-  if (!names.length) return;
-  sel.innerHTML = names.map(n => `<option value="${n}">${factorLabel(n)}</option>`).join("");
-
-  let chart = null;
-  function draw(name) {
-    const data = ft.factors[name] || [];
-    const cfg = {
-      type: "line",
-      data: {
-        labels: ft.dates,
-        datasets: [{
-          label: factorLabel(name),
-          data,
-          borderColor: "#2563eb",
-          backgroundColor: "#2563eb",
-          tension: 0.25,
-          spanGaps: true,
-        }],
-      },
-      options: { responsive: true, scales: { y: { suggestedMin: 0, suggestedMax: 100 } } },
-    };
-    if (chart) { chart.destroy(); }
-    chart = new Chart(ctx, cfg);
-  }
-  sel.onchange = () => draw(sel.value);
-  draw(names[0]);
+function renderIndustryFactorTable(entry) {
+  document.getElementById("industry-factor-title").textContent =
+    `${entry.label}：行業因子`;
+  renderFactorRows("#industry-factor-table", entry.factors);
 }
 
 // 競爭距離權重（與後端 aggregate.proximity_weight 一致）
@@ -257,7 +226,7 @@ function proximityWeight(d) {
   return 1.0 - (1.0 - COMPETITION_FLOOR) * (d - WALK_KM) / (DRIVE_KM - WALK_KM);
 }
 
-// 通用「鄰近點位清單」：名稱／地址／距離／（競爭或綜效）權重／評分，近者在前
+// 通用「鄰近點位清單」：名稱／地址／距離／權重／評分，近者在前
 function renderProximityList(items, tableSel, countId) {
   const tbody = document.querySelector(`${tableSel} tbody`);
   const countEl = document.getElementById(countId);
@@ -268,7 +237,6 @@ function renderProximityList(items, tableSel, countId) {
     tbody.innerHTML = "<tr><td colspan='5'>尚無資料</td></tr>";
     return;
   }
-  // 距離越近影響越強 → 近者在前（無距離者排最後）
   list.sort((a, b) =>
     (a.dist_km == null ? Infinity : a.dist_km) -
     (b.dist_km == null ? Infinity : b.dist_km));
@@ -290,22 +258,24 @@ function renderProximityList(items, tableSel, countId) {
   }).join("");
 }
 
-function renderTrend(payload) {
-  const trend = payload.trend || { dates: [], specialties: {} };
+// 分數趨勢：畫所選行業組內各行業的分數折線
+let trendChart = null;
+function renderTrend(payload, flat, group) {
   const ctx = document.getElementById("trendChart");
-  if (!trend.dates.length) return;
-  const names = Object.keys(trend.specialties);
-  const datasets = names.map((name, i) => ({
-    label: specLabel(name),
-    data: trend.specialties[name],
+  const dates = payload.dates || [];
+  document.getElementById("trend-title").textContent =
+    `${groupLabel(group)}各行業分數趨勢`;
+  if (!dates.length) return;
+  const members = Object.entries(flat).filter(([, d]) => d.group === group);
+  const datasets = members.map(([iid, d], i) => ({
+    label: d.label,
+    data: d.trend || [],
     borderColor: SERIES_COLORS[i % SERIES_COLORS.length],
     backgroundColor: SERIES_COLORS[i % SERIES_COLORS.length],
     tension: 0.25,
     spanGaps: true,
   }));
-  // 各科分數常落在窄區間，自動縮放 Y 軸到實際範圍（含上下緩衝）讓線分開
-  const vals = names.flatMap(n => (trend.specialties[n] || []))
-    .filter(v => v != null);
+  const vals = members.flatMap(([, d]) => (d.trend || [])).filter(v => v != null);
   let yMin, yMax;
   if (vals.length) {
     const lo = Math.min(...vals), hi = Math.max(...vals);
@@ -313,14 +283,17 @@ function renderTrend(payload) {
     yMin = Math.max(0, Math.floor(lo - pad));
     yMax = Math.min(100, Math.ceil(hi + pad));
   }
-  new Chart(ctx, {
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(ctx, {
     type: "line",
-    data: { labels: trend.dates, datasets },
+    data: { labels: dates, datasets },
     options: { responsive: true, scales: { y: { min: yMin, max: yMax } } },
   });
 }
 
-function renderMap(payload, geo) {
+// 地圖：建立一次，切換行業時只更新 competitors/anchors 兩圖層
+let mapState = null;
+function initMap(payload) {
   const card = document.getElementById("map-card");
   const center = (payload.meta && payload.meta.latlon) || null;
   if (!center) { card.style.display = "none"; return; }
@@ -335,28 +308,15 @@ function renderMap(payload, geo) {
   L.circle(center, { radius: 3000, color: "#16a34a", fill: false }).addTo(map);
 
   const groups = {
-    clinics: { color: "#dc2626", label: "西醫診所" },
-    aesthetic: { color: "#db2777", label: "醫美/皮膚科" },
+    competitors: { color: "#dc2626", label: "競爭對手" },
     anchors: { color: "#7c3aed", label: "互補錨點" },
-    convenience: { color: "#d97706", label: "便利商店" },
-    transit: { color: "#0891b2", label: "公車站" },
-    schools: { color: "#65a30d", label: "學校" },
   };
-  // 每類別包成獨立圖層，方便由圖例點擊切換顯示/隱藏
   const layers = {};
-  Object.entries(groups).forEach(([key, cfg]) => {
-    const lg = L.layerGroup();
-    (geo[key] || []).forEach(p => {
-      if (p.lat == null || p.lon == null) return;
-      L.circleMarker([p.lat, p.lon], { radius: 5, color: cfg.color, fillOpacity: 0.7 })
-        .bindPopup(`${cfg.label}${p.name ? "：" + p.name : ""}`)
-        .addTo(lg);
-    });
-    lg.addTo(map);
+  Object.keys(groups).forEach(key => {
+    const lg = L.layerGroup().addTo(map);
     layers[key] = lg;
   });
 
-  // 圖例：說明各色點點與範圍圈的類別；點類別列可切換該類別顯示
   const legend = L.control({ position: "bottomright" });
   legend.onAdd = function () {
     const div = L.DomUtil.create("div", "map-legend");
@@ -365,7 +325,7 @@ function renderMap(payload, geo) {
     const groupRows = Object.entries(groups).map(([key, cfg]) =>
       `<div class="lg-row lg-toggle" data-key="${key}" title="點擊隱藏/顯示">` +
       `<span class="lg-dot" style="background:${cfg.color}"></span>` +
-      `${cfg.label}（${(geo[key] || []).length}）</div>`).join("");
+      `<span class="lg-label" data-key="${key}">${cfg.label}（0）</span></div>`).join("");
     const lines =
       `<div class="lg-row"><span class="lg-line" style="border-color:#2563eb"></span>步行 1km</div>` +
       `<div class="lg-row"><span class="lg-line" style="border-color:#16a34a"></span>車程 3km</div>`;
@@ -381,25 +341,98 @@ function renderMap(payload, geo) {
     return div;
   };
   legend.addTo(map);
+  mapState = { map, layers, groups };
+}
+
+function updateMap(geoForIndustry) {
+  if (!mapState) return;
+  const { layers, groups } = mapState;
+  Object.entries(groups).forEach(([key, cfg]) => {
+    const lg = layers[key];
+    lg.clearLayers();
+    (geoForIndustry[key] || []).forEach(p => {
+      if (p.lat == null || p.lon == null) return;
+      L.circleMarker([p.lat, p.lon], { radius: 5, color: cfg.color, fillOpacity: 0.7 })
+        .bindPopup(`${cfg.label}${p.name ? "：" + p.name : ""}`)
+        .addTo(lg);
+    });
+    const lbl = document.querySelector(`.lg-label[data-key="${key}"]`);
+    if (lbl) lbl.textContent = `${cfg.label}（${(geoForIndustry[key] || []).length}）`;
+  });
 }
 
 async function main() {
   const payload = await loadJSON("data/history.json", {
-    meta: {}, trend: { dates: [], specialties: {} },
-    factors: [], breakdowns: {},
+    meta: {}, dates: [], location_factors: [], groups: {},
   });
   const geo = await loadJSON("data/geo.json", {});
+  const flat = flatIndustries(payload);
 
   renderMeta(payload);
-  renderRanking(payload);
-  renderBreakdown(payload);
-  renderFactorTable(payload);
-  renderFactorTrend(payload);
-  renderTrend(payload);
-  renderMap(payload, geo);
-  renderProximityList(geo.clinics, "#clinic-table", "clinic-count");
-  renderProximityList(geo.aesthetic, "#aesthetic-table", "aesthetic-count");
-  renderProximityList(geo.anchors, "#anchor-table", "anchor-count");
+  renderFactorRows("#location-factor-table", payload.location_factors);
+  initMap(payload);
+
+  const groupSel = document.getElementById("group-select");
+  const tabsEl = document.getElementById("industry-tabs");
+  const iids = Object.keys(flat);
+  if (!iids.length) {
+    renderRanking(flat, () => {});
+    return;
+  }
+
+  const presentGroups = [];
+  Object.keys(payload.groups || {}).forEach(g => {
+    if (!presentGroups.includes(g)) presentGroups.push(g);
+  });
+  groupSel.innerHTML = presentGroups
+    .map(g => `<option value="${g}">${groupLabel(g)}</option>`).join("");
+
+  let currentGroup = null;
+  let currentIid = null;
+
+  function selectIndustry(iid) {
+    currentIid = iid;
+    const entry = flat[iid];
+    if (!entry) return;
+    if (entry.group !== currentGroup) {
+      currentGroup = entry.group;
+      groupSel.value = currentGroup;
+      renderTabs(currentGroup);
+      renderTrend(payload, flat, currentGroup);
+    }
+    tabsEl.querySelectorAll(".tab").forEach(t =>
+      t.classList.toggle("active", t.dataset.iid === iid));
+    renderBreakdown(entry);
+    renderIndustryFactorTable(entry);
+    document.getElementById("competitor-title").innerHTML =
+      `${entry.label}：3km 內競爭對手清單（<span id="competitor-count">0</span> 家）`;
+    const g = geo[iid] || {};
+    updateMap(g);
+    renderProximityList(g.competitors, "#competitor-table", "competitor-count");
+    renderProximityList(g.anchors, "#anchor-table", "anchor-count");
+  }
+
+  function renderTabs(group) {
+    const members = Object.entries(flat).filter(([, d]) => d.group === group);
+    tabsEl.innerHTML = members.map(([iid, d]) =>
+      `<button type="button" class="tab" data-iid="${iid}">${d.label}</button>`).join("");
+    tabsEl.querySelectorAll(".tab").forEach(t =>
+      t.addEventListener("click", () => selectIndustry(t.dataset.iid)));
+  }
+
+  groupSel.onchange = () => {
+    const g = groupSel.value;
+    const first = Object.keys(flat).find(iid => flat[iid].group === g);
+    if (first) selectIndustry(first);
+  };
+
+  renderRanking(flat, selectIndustry);
+
+  // 預設選最高分行業
+  const top = Object.entries(flat)
+    .filter(([, d]) => d.score != null)
+    .sort((a, b) => b[1].score - a[1].score)[0];
+  selectIndustry(top ? top[0] : iids[0]);
 }
 
 main();
