@@ -4,10 +4,11 @@ from pathlib import Path
 from clinic_siting.runner import run_refresh
 
 FIX = Path(__file__).resolve().parent / "fixtures"
-CONFIG = Path(__file__).resolve().parents[1] / "config" / "specialties.yaml"
-SPECIALTIES = {
+CONFIG = Path(__file__).resolve().parents[1] / "config" / "industries.yaml"
+ALL_INDUSTRIES = {
     "family_medicine", "functional_medicine", "weight_loss",
     "psychiatry", "aesthetics",
+    "restaurant", "bubble_tea", "cafe", "gym", "cram_school", "hair_beauty",
 }
 
 
@@ -25,7 +26,7 @@ def test_run_refresh_offline_builds_site_and_returns_snapshot(tmp_path):
     site = tmp_path / "site"
     snap = run_refresh(live=False, reference_dir=ref, history_path=hist,
                        config_path=CONFIG, site_dir=site)
-    assert set(snap["scores"].keys()) == SPECIALTIES
+    assert set(snap["industries"].keys()) == ALL_INDUSTRIES
     assert hist.exists()
     assert (site / "data" / "history.json").exists()
     assert (site / "data" / "geo.json").exists()
