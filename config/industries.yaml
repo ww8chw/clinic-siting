@@ -1,0 +1,98 @@
+weight_levels: {最高: 5, 高: 4, 中: 3, 低: 2, 無: 0}
+
+factors:
+  - population_density
+  - age_gender
+  - day_night_gap
+  - school_proximity
+  - purchasing_power
+  - business_density
+  - land_use_mix
+  - competition
+  - complementary_anchors
+  - convenience_density
+  - accessibility
+  - redevelopment_stage
+  - visibility
+
+negative_factors: [competition]
+
+industries:
+  family_medicine:
+    group: medical
+    label: 家醫科
+    competitors:
+      - {source: google_places, pool: western, types: [doctor, medical_clinic], classify: western}
+    anchors: {source: google_places, types: [pharmacy, hospital]}
+    weights: {population_density: 高, age_gender: 中, day_night_gap: 中, school_proximity: 高, purchasing_power: 中, business_density: 中, land_use_mix: 中, competition: 中, complementary_anchors: 中, convenience_density: 高, accessibility: 高, redevelopment_stage: 中, visibility: 中}
+  functional_medicine:
+    group: medical
+    label: 功能醫學
+    competitors:
+      - {source: google_places, pool: western, types: [doctor, medical_clinic], classify: western}
+    anchors: {source: google_places, types: [pharmacy, hospital]}
+    weights: {population_density: 中, age_gender: 中, day_night_gap: 中, school_proximity: 無, purchasing_power: 高, business_density: 中, land_use_mix: 中, competition: 低, complementary_anchors: 中, convenience_density: 中, accessibility: 中, redevelopment_stage: 中, visibility: 中}
+  weight_loss:
+    group: medical
+    label: 減重
+    competitors:
+      - {source: google_places, pool: western, types: [doctor, medical_clinic], classify: western}
+    anchors: {source: google_places, types: [pharmacy, hospital]}
+    weights: {population_density: 中, age_gender: 高, day_night_gap: 中, school_proximity: 中, purchasing_power: 高, business_density: 中, land_use_mix: 中, competition: 高, complementary_anchors: 中, convenience_density: 中, accessibility: 中, redevelopment_stage: 中, visibility: 中}
+  psychiatry:
+    group: medical
+    label: 精神科
+    competitors:
+      - {source: google_places, pool: western, types: [doctor, medical_clinic], classify: western}
+    anchors: {source: google_places, types: [pharmacy, hospital]}
+    weights: {population_density: 高, age_gender: 中, day_night_gap: 中, school_proximity: 低, purchasing_power: 中, business_density: 低, land_use_mix: 中, competition: 中, complementary_anchors: 中, convenience_density: 中, accessibility: 高, redevelopment_stage: 中, visibility: 中}
+  aesthetics:
+    group: medical
+    label: 醫美
+    competitors:
+      - {source: google_places, pool: western, types: [doctor, medical_clinic], classify: western}
+      - {source: google_places, pool: aesthetic, types: [beauty_salon, spa, skin_care_clinic], classify: aesthetic}
+    anchors: {source: google_places, types: [pharmacy, hospital]}
+    weights: {population_density: 中, age_gender: 高, day_night_gap: 中, school_proximity: 中, purchasing_power: 最高, business_density: 高, land_use_mix: 中, competition: 最高, complementary_anchors: 中, convenience_density: 高, accessibility: 中, redevelopment_stage: 中, visibility: 高}
+  restaurant:
+    group: food
+    label: 餐飲
+    competitors:
+      - {source: osm, tags: {amenity: restaurant}}
+    anchors: {source: osm, tags: {shop: convenience}}
+    weights: {population_density: 高, age_gender: 中, day_night_gap: 中, school_proximity: 中, purchasing_power: 中, business_density: 高, land_use_mix: 高, competition: 中, complementary_anchors: 中, convenience_density: 中, accessibility: 高, redevelopment_stage: 低, visibility: 高}
+  bubble_tea:
+    group: food
+    label: 手搖飲
+    competitors:
+      - {source: google_places, types: [cafe], keywords: [手搖, 茶飲, 五十嵐, 清心, 迷客夏, coco]}
+    anchors: {source: osm, tags: {amenity: school}}
+    weights: {population_density: 高, age_gender: 高, day_night_gap: 中, school_proximity: 高, purchasing_power: 低, business_density: 高, land_use_mix: 中, competition: 高, complementary_anchors: 中, convenience_density: 高, accessibility: 高, redevelopment_stage: 低, visibility: 最高}
+  cafe:
+    group: food
+    label: 咖啡
+    competitors:
+      - {source: osm, tags: {amenity: cafe}}
+    anchors: {source: osm, tags: {amenity: coworking_space}}
+    weights: {population_density: 中, age_gender: 高, day_night_gap: 中, school_proximity: 低, purchasing_power: 高, business_density: 高, land_use_mix: 高, competition: 中, complementary_anchors: 中, convenience_density: 中, accessibility: 中, redevelopment_stage: 中, visibility: 高}
+  gym:
+    group: fitness
+    label: 健身房
+    competitors:
+      - {source: osm, tags: {leisure: fitness_centre}}
+    anchors: {source: osm, tags: {shop: convenience}}
+    weights: {population_density: 高, age_gender: 高, day_night_gap: 中, school_proximity: 低, purchasing_power: 高, business_density: 中, land_use_mix: 中, competition: 高, complementary_anchors: 中, convenience_density: 中, accessibility: 高, redevelopment_stage: 中, visibility: 高}
+  cram_school:
+    group: education
+    label: 補習班
+    competitors:
+      - {source: osm, tags: {amenity: school}}
+    anchors: {source: osm, tags: {amenity: school}}
+    weights: {population_density: 高, age_gender: 中, day_night_gap: 中, school_proximity: 最高, purchasing_power: 高, business_density: 中, land_use_mix: 中, competition: 中, complementary_anchors: 高, convenience_density: 中, accessibility: 高, redevelopment_stage: 中, visibility: 中}
+  hair_beauty:
+    group: service
+    label: 美容美髮
+    competitors:
+      - {source: osm, tags: {shop: hairdresser}}
+    anchors: {source: osm, tags: {shop: convenience}}
+    weights: {population_density: 中, age_gender: 高, day_night_gap: 中, school_proximity: 低, purchasing_power: 高, business_density: 中, land_use_mix: 中, competition: 中, complementary_anchors: 中, convenience_density: 中, accessibility: 中, redevelopment_stage: 中, visibility: 高}
