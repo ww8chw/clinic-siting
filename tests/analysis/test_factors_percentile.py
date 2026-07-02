@@ -51,3 +51,13 @@ def test_building_age_percentile_inverts():
     # 10 在第2位 midrank=(1+2)/2=1.5 → pctl 30 → invert 70
     assert f["redevelopment_stage"].score == 70.0
     assert f["redevelopment_stage"].source == "degraded"
+
+
+def test_age_gender_composite_percentile():
+    dp = _dist("age_prime", "里", [0.30, 0.35, 0.40, 0.45, 0.50])
+    df = _dist("age_female", "里", [0.46, 0.48, 0.50, 0.52, 0.54])
+    raw = {"age_prime_share": 0.45, "female_share": 0.52}
+    f = build_factors(raw, dist={"age_prime": dp, "age_female": df})
+    # 壯年 0.45 midrank=(3+4)/2=3.5→70；女 0.52 →70；0.7*70+0.3*70=70
+    assert f["age_gender"].score == 70.0
+    assert f["age_gender"].source == "real"

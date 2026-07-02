@@ -1,7 +1,7 @@
 import json
 from site_siting.data_sources.distribution_builder import (
     make_distribution, income_median_values, population_values,
-    write_distribution, building_age_values)
+    write_distribution, building_age_values, age_share_values)
 
 
 def test_income_median_values_extracts_medians():
@@ -54,3 +54,17 @@ def test_building_age_values_per_district_median():
                                districts=["龜山區", "桃園區", "無日期區"])
     # 龜山區 median(屋齡[25,5])=15、桃園區=3；無日期區無值不計
     assert sorted(vals) == [3.0, 15.0]
+
+
+def test_age_share_values_prime_and_female_per_village():
+    # ODRP052 列：{site_id, village, sex, age, population}
+    rows = [
+        {"site_id": "A", "village": "甲", "sex": "男", "age": "30~34歲", "population": "40"},
+        {"site_id": "A", "village": "甲", "sex": "女", "age": "30~34歲", "population": "60"},
+        {"site_id": "A", "village": "乙", "sex": "女", "age": "10~14歲", "population": "50"},
+        {"site_id": "A", "village": "乙", "sex": "男", "age": "10~14歲", "population": "50"},
+    ]
+    prime, female = age_share_values(rows)
+    # 甲里：壯年100/100=1.0、女60/100=0.6；乙里：壯年0/100=0、女50/100=0.5
+    assert sorted(prime) == [0.0, 1.0]
+    assert sorted(female) == [0.5, 0.6]

@@ -217,9 +217,18 @@ def build_factors(raw: dict, dist: dict | None = None) -> dict[str, FactorResult
         out["business_density"] = FactorResult(NEUTRAL, "missing")
 
     # 年齡/性別：村里壯年(25–49)占比 + 女性占比（內政部 ODRP052）
-    if raw.get("age_prime_share") is not None and raw.get("female_share") is not None:
-        out["age_gender"] = FactorResult(
-            age_gender_score(raw["age_prime_share"], raw["female_share"]), "real")
+    prime = raw.get("age_prime_share")
+    female = raw.get("female_share")
+    if prime is not None and female is not None:
+        dp = dist.get("age_prime")
+        df = dist.get("age_female")
+        if dp is not None and df is not None:
+            pc = percentile_score(prime, dp)
+            fc = percentile_score(female, df)
+            score = AGE_PRIME_WEIGHT * pc + (1.0 - AGE_PRIME_WEIGHT) * fc
+        else:
+            score = age_gender_score(prime, female)
+        out["age_gender"] = FactorResult(score, "real")
     else:
         out["age_gender"] = FactorResult(NEUTRAL, "missing")
 
@@ -373,12 +382,21 @@ def factor_explanation(name: str, raw: dict, dist: dict | None = None) -> dict:
         fem = g("female_share")
         tot = g("age_pop_total")
         tot_txt = f"（村里 {tot:,} 人）" if tot else ""
+        dp = dist.get("age_prime")
+        df = dist.get("age_female")
+        if dp is not None and df is not None and fem is not None:
+            pp = percentile_score(prime, dp)
+            pf = percentile_score(fem, df)
+            basis = (f"壯年占比全桃園 {dp.n} 里第 {pp:.0f} 百分位、女性第 {pf:.0f} 百分位，"
+                     f"加權 {AGE_PRIME_WEIGHT:.0%}:{1 - AGE_PRIME_WEIGHT:.0%}（{dp.source}）")
+        else:
+            basis = (f"自費客群代理：壯年占比映射 {AGE_PRIME_LO:.0%}–{AGE_PRIME_HI:.0%}、"
+                     f"女性占比映射 {FEMALE_LO:.0%}–{FEMALE_HI:.0%}，"
+                     f"加權 {AGE_PRIME_WEIGHT:.0%}:{1 - AGE_PRIME_WEIGHT:.0%} → 0–100")
         return {
             "raw": (f"壯年 25–49 占 {prime * 100:.1f}%、女性占 "
                     f"{(fem or 0) * 100:.1f}%{tot_txt}"),
-            "basis": (f"自費客群代理：壯年占比映射 {AGE_PRIME_LO:.0%}–{AGE_PRIME_HI:.0%}、"
-                      f"女性占比映射 {FEMALE_LO:.0%}–{FEMALE_HI:.0%}，"
-                      f"加權 {AGE_PRIME_WEIGHT:.0%}:{1 - AGE_PRIME_WEIGHT:.0%} → 0–100"),
+            "basis": basis,
         }
     if name == "day_night_gap":
         ratio = g("business_ratio")

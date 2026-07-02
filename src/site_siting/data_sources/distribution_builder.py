@@ -5,6 +5,7 @@ from datetime import date
 from pathlib import Path
 
 from site_siting.analysis.percentile import Distribution
+from site_siting.data_sources.moi_agegender import PRIME_AGES
 from site_siting.data_sources.realprice import district_median_building_age
 
 
@@ -35,6 +36,27 @@ def building_age_values(records, as_of_year: int, districts) -> list[float]:
         if age is not None:
             out.append(float(age))
     return out
+
+
+def age_share_values(rows) -> tuple[list[float], list[float]]:
+    """ODRP052 列 → 各里(壯年占比, 女性占比) 兩條母體。
+    以 (site_id, village) 分組跨婚姻狀況/年齡加總。"""
+    agg: dict[tuple, dict] = {}
+    for x in rows:
+        key = (x.get("site_id"), x.get("village"))
+        pop = int(x.get("population") or 0)
+        a = agg.setdefault(key, {"total": 0, "female": 0, "prime": 0})
+        a["total"] += pop
+        if x.get("sex") == "女":
+            a["female"] += pop
+        if x.get("age") in PRIME_AGES:
+            a["prime"] += pop
+    prime, female = [], []
+    for a in agg.values():
+        if a["total"] > 0:
+            prime.append(a["prime"] / a["total"])
+            female.append(a["female"] / a["total"])
+    return prime, female
 
 
 def write_distribution(dist: Distribution, path) -> None:
