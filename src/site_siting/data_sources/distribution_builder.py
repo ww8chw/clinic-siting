@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 from datetime import date
 from pathlib import Path
 
@@ -57,6 +58,11 @@ def age_share_values(rows) -> tuple[list[float], list[float]]:
             prime.append(a["prime"] / a["total"])
             female.append(a["female"] / a["total"])
     return prime, female
+
+
+def daynight_deviation_values(ratios) -> list[float]:
+    """各區每千人營業家數相對全國比值 → |ln(比值)| 偏離量母體（比值>0 者）。"""
+    return [abs(math.log(r)) for r in ratios if r and r > 0]
 
 
 def write_distribution(dist: Distribution, path) -> None:

@@ -68,3 +68,11 @@ def test_age_share_values_prime_and_female_per_village():
     # 甲里：壯年100/100=1.0、女60/100=0.6；乙里：壯年0/100=0、女50/100=0.5
     assert sorted(prime) == [0.0, 1.0]
     assert sorted(female) == [0.5, 0.6]
+
+
+def test_daynight_deviation_values():
+    import math
+    from site_siting.data_sources.distribution_builder import daynight_deviation_values
+    # ratio=1 偏離0；ratio=e 偏離1；ratio=0/負 略過
+    vals = daynight_deviation_values([1.0, math.e, 0.0, -1.0])
+    assert sorted(round(v, 6) for v in vals) == [0.0, 1.0]

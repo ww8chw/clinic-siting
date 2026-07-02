@@ -61,3 +61,14 @@ def test_age_gender_composite_percentile():
     # 壯年 0.45 midrank=(3+4)/2=3.5→70；女 0.52 →70；0.7*70+0.3*70=70
     assert f["age_gender"].score == 70.0
     assert f["age_gender"].source == "real"
+
+
+def test_day_night_percentile_inverts_on_deviation():
+    import math
+    # 偏離量母體 [0,0.2,0.5,1.0]；ratio=e^0.5 偏離0.5 在第3位
+    # midrank=(2+3)/2=2.5 → pctl 62.5 → invert 37.5（舊 minmax 公式為 65，須不同）
+    d = _dist("day_night_gap", "區", [0.0, 0.2, 0.5, 1.0])
+    ratio = math.exp(0.5)
+    f = build_factors({"business_ratio": ratio}, dist={"day_night_gap": d})
+    assert f["day_night_gap"].score == 37.5
+    assert f["day_night_gap"].source == "real"

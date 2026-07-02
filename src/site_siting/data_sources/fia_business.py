@@ -30,6 +30,21 @@ def count_in_rows(rows, district: str) -> tuple[int, int]:
     return district_count, total
 
 
+def count_all_districts(rows, districts) -> tuple[dict[str, int], int]:
+    """單次掃描同時計各行政區與全國總家數。回傳 ({區: 家數}, 全國總數)。"""
+    counts = {d: 0 for d in districts}
+    total = 0
+    for i, row in enumerate(rows):
+        if i == 0 or not row:
+            continue
+        total += 1
+        addr = row[_ADDRESS_COL] if len(row) > _ADDRESS_COL else ""
+        for d in districts:
+            if d in addr:
+                counts[d] += 1
+    return counts, total
+
+
 def business_ratio(district_count: int, total: int,
                    district_pop: int, national_pop: int) -> float | None:
     """行政區每千人家數 ÷ 全國每千人家數。資料不足 → None。"""

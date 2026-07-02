@@ -233,9 +233,14 @@ def build_factors(raw: dict, dist: dict | None = None) -> dict[str, FactorResult
         out["age_gender"] = FactorResult(NEUTRAL, "missing")
 
     # 晝夜落差：行政區營業家數每千人相對全國比值（財政部稅籍登記）
-    if raw.get("business_ratio") is not None:
-        out["day_night_gap"] = FactorResult(
-            day_night_score(raw["business_ratio"]), "real")
+    ratio = raw.get("business_ratio")
+    if ratio is not None:
+        d = dist.get("day_night_gap")
+        if d is not None and ratio > 0:
+            score = percentile_score(abs(math.log(ratio)), d, invert=True)
+        else:
+            score = day_night_score(ratio)
+        out["day_night_gap"] = FactorResult(score, "real")
     else:
         out["day_night_gap"] = FactorResult(NEUTRAL, "missing")
 
@@ -404,9 +409,16 @@ def factor_explanation(name: str, raw: dict, dist: dict | None = None) -> dict:
             return {"raw": "無資料", "basis": "沿用上次快照值或中性 50"}
         lean = "日夜均衡" if 0.85 <= ratio <= 1.15 else (
             "就業聚集型" if ratio > 1.15 else "住宅睡城型")
+        d = dist.get("day_night_gap")
+        if d is not None and ratio > 0:
+            p = percentile_score(abs(math.log(ratio)), d, invert=True)
+            basis = (f"日夜均衡度（|ln(比值)| 偏離量）全桃園 {d.n} 區第 {p:.0f} 百分位"
+                     f"（越均衡越高，{d.source}）")
+        else:
+            basis = "比值=1 日夜最均衡得分最高；偏離以 |ln(比值)| 線性扣分"
         return {
             "raw": f"營業家數每千人為全國 {ratio:.2f} 倍（{lean}）",
-            "basis": "比值=1 日夜最均衡得分最高；偏離以 |ln(比值)| 線性扣分",
+            "basis": basis,
         }
     if name == "school_proximity":
         v = g("school_count")
