@@ -4,6 +4,7 @@ import math
 from dataclasses import dataclass
 
 from site_siting.analysis.aggregate import WALK_KM, DRIVE_KM, COMPETITION_FLOOR
+from site_siting.analysis.percentile import percentile_score
 from site_siting.scoring.normalize import minmax_score
 
 # 13 因子（順序對齊 config/industries.yaml）
@@ -137,24 +138,37 @@ def school_proximity_score(count: float) -> float:
     return NEUTRAL + bonus * (100.0 - NEUTRAL)
 
 
-def build_factors(raw: dict) -> dict[str, FactorResult]:
-    """原始值 → 12 因子 FactorResult（已處理負向語意，分數一律高=佳）。"""
+def build_factors(raw: dict, dist: dict | None = None) -> dict[str, FactorResult]:
+    """原始值 → 12 因子 FactorResult（已處理負向語意，分數一律高=佳）。
+    dist：{factor: Distribution}，有對映分布時該因子改走百分位、否則沿用 minmax。"""
     out: dict[str, FactorResult] = {}
+    dist = dist or {}
 
     def real_or_missing(key, scorer):
         if key in raw and raw[key] is not None:
             return FactorResult(scorer(raw[key]), "real")
         return FactorResult(NEUTRAL, "missing")
 
+    def _pctl_or_minmax(factor, value, lo, hi, invert=False):
+        d = dist.get(factor)
+        if d is not None:
+            return percentile_score(value, d, invert=invert)
+        return minmax_score(value, lo, hi, invert=invert)
+
     # 本地離線來源（必有）
-    out["purchasing_power"] = real_or_missing(
-        "weighted_median_income",
-        lambda v: minmax_score(v, INCOME_LO, INCOME_HI),
-    )
-    out["population_density"] = real_or_missing(
-        "population",
-        lambda v: minmax_score(v, POP_LO, POP_HI),
-    )
+    inc = raw.get("weighted_median_income")
+    if inc is not None:
+        out["purchasing_power"] = FactorResult(
+            _pctl_or_minmax("purchasing_power", inc, INCOME_LO, INCOME_HI), "real")
+    else:
+        out["purchasing_power"] = FactorResult(NEUTRAL, "missing")
+
+    pop_v = raw.get("population")
+    if pop_v is not None:
+        out["population_density"] = FactorResult(
+            _pctl_or_minmax("population_density", pop_v, POP_LO, POP_HI), "real")
+    else:
+        out["population_density"] = FactorResult(NEUTRAL, "missing")
 
     # 競爭：每 profile 宣告 1..n 池，各池算需求/供給分，取最嚴格（最低分）。
     # 每池優先用距離加權有效家數（近者競爭強）；無則退回原始家數。
@@ -246,16 +260,26 @@ def factor_scores(factors: dict[str, FactorResult]) -> dict[str, float]:
     return {name: r.score for name, r in factors.items()}
 
 
-def factor_explanation(name: str, raw: dict) -> dict:
+def factor_explanation(name: str, raw: dict, dist: dict | None = None) -> dict:
     """回傳該因子的原始數據與換算依據文字：{raw, basis}。
-    單一真相源——說明每個 0–100 分數背後量到什麼、用什麼門檻換算。"""
+    單一真相源——說明每個 0–100 分數背後量到什麼、用什麼門檻換算。
+    dist：{factor: Distribution}，有對映分布時說明改標「第 P 百分位（N、出處）」。"""
     g = raw.get
+    dist = dist or {}
+
+    def _pctl_basis(factor, value, invert=False):
+        d = dist.get(factor)
+        if d is None or value is None:
+            return None
+        p = percentile_score(value, d, invert=invert)
+        return f"全桃園 {d.n} 個{d.unit}中第 {p:.0f} 百分位（{d.source}）"
 
     if name == "purchasing_power":
         v = g("weighted_median_income")
+        pb = _pctl_basis("purchasing_power", v)
         return {
             "raw": f"戶中位所得 {v:,.0f} 千元" if v is not None else "無資料",
-            "basis": f"線性映射 {INCOME_LO:.0f}–{INCOME_HI:.0f} 千元 → 0–100",
+            "basis": pb or f"線性映射 {INCOME_LO:.0f}–{INCOME_HI:.0f} 千元 → 0–100",
         }
     if name == "population_density":
         v = g("population")
@@ -266,10 +290,11 @@ def factor_explanation(name: str, raw: dict) -> dict:
             village_txt = f"｜所在里 {vh:,.0f} 戶"
             if vp is not None:
                 village_txt += f"、約 {vp:,.0f} 人（估）"
+        pb = _pctl_basis("population_density", v)
         return {
             "raw": (f"區人口 {v:,.0f} 人{village_txt}" if v is not None else "無資料"),
-            "basis": (f"線性映射 {POP_LO:,.0f}–{POP_HI:,.0f} 人 → 0–100"
-                      f"（里級戶數為財政部實數、人口按戶數比例估算）"),
+            "basis": pb or (f"線性映射 {POP_LO:,.0f}–{POP_HI:,.0f} 人 → 0–100"
+                            f"（里級戶數為財政部實數、人口按戶數比例估算）"),
         }
     if name == "competition":
         pools = raw.get("competition_pools")
