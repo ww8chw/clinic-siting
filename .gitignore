@@ -8,6 +8,9 @@ venv/
 data/reference/*
 !data/reference/.gitkeep
 !data/reference/*.csv
+!data/reference/distributions
+data/reference/distributions/*
+!data/reference/distributions/*.json
 *.egg-info/
 data/*.jsonl
 logs/
