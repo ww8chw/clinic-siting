@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 # 分布檔預設目錄（專案根 /data/reference/distributions）
-DISTRIBUTIONS_DIR = (Path(__file__).resolve().parents[2]
+# percentile.py 位於 src/site_siting/analysis/，故專案根為 parents[3]
+DISTRIBUTIONS_DIR = (Path(__file__).resolve().parents[3]
                      / "data" / "reference" / "distributions")
 
 

@@ -7,6 +7,7 @@ from site_siting.analysis.aggregate import (
     WALK_KM, DRIVE_KM, count_within, weighted_count_within)
 from site_siting.geo.distance import haversine_km
 from site_siting.analysis.factors import build_factors, factor_scores
+from site_siting.analysis.percentile import load_distributions
 from site_siting.data_sources import (
     env,
     fia_business,
@@ -233,9 +234,10 @@ def run_pipeline(reference_dir, history_path, config_path,
 
     config = load_industry_config(config_path)
     last = load_last_snapshot(history_path)
+    dist = load_distributions()
 
     # 地點因子（全行業共用）：此時競爭/錨點為 missing，只取地點 11 因子顯示
-    loc_factors = build_factors(raw)
+    loc_factors = build_factors(raw, dist)
     loc_factors = fill_degraded_location(loc_factors, last)
     location = {
         "factors": {n: {"score": r.score, "source": r.source}
@@ -251,7 +253,7 @@ def run_pipeline(reference_dir, history_path, config_path,
         if live:
             more_raw, ind_geo = collect_industry(center, prof)
             ind_raw.update(more_raw)
-        factors = build_factors(ind_raw)
+        factors = build_factors(ind_raw, dist)
         factors = fill_degraded_industry(factors, last, iid)
         score = score_industry(factor_scores(factors), prof.weights)
         industries[iid] = {

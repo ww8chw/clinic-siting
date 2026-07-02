@@ -114,3 +114,11 @@ def test_build_site_handles_empty_history(tmp_path):
     assert hjson["groups"] == {}
     gjson = json.loads((site / "data" / "geo.json").read_text(encoding="utf-8"))
     assert gjson == {}
+
+
+def test_location_factor_basis_shows_percentile():
+    payload = build_payload(
+        [_snap("2026-06-01", 70.0), _snap("2026-07-01", 72.0)], CONFIG)
+    rows = {r["factor"]: r for r in payload["location_factors"]}
+    # 已提交分布檔 → purchasing_power 說明含「百分位」
+    assert "百分位" in rows["purchasing_power"]["basis_text"]

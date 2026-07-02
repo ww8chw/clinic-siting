@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 from site_siting.analysis.factors import ALL_FACTORS, factor_explanation
+from site_siting.analysis.percentile import load_distributions
 from site_siting.data_sources import geocode
 
 # 數值權重 → 等級標籤（對齊 config/industries.yaml 的 weight_levels）
@@ -27,11 +28,11 @@ def _load_snapshots(history_path) -> list[dict]:
     return out
 
 
-def _factor_row(name, factors, prev_factors, raw):
+def _factor_row(name, factors, prev_factors, raw, dist=None):
     f = factors.get(name)
     if f is None:
         return None
-    exp = factor_explanation(name, raw)
+    exp = factor_explanation(name, raw, dist)
     pf = prev_factors.get(name)
     prev_score = pf["score"] if pf else None
     delta = (f["score"] - prev_score) if prev_score is not None else None
@@ -48,7 +49,7 @@ def _factor_row(name, factors, prev_factors, raw):
     }
 
 
-def _location_factor_table(snapshots: list[dict]) -> list[dict]:
+def _location_factor_table(snapshots: list[dict], dist=None) -> list[dict]:
     """共用地點因子明細（11 因子）：原始數據、依據、正規化分、來源、與上一筆變化。"""
     if not snapshots:
         return []
@@ -59,13 +60,13 @@ def _location_factor_table(snapshots: list[dict]) -> list[dict]:
     raw = snap.get("raw", {})
     rows = []
     for name in LOCATION_FACTORS:
-        row = _factor_row(name, factors, prev_factors, raw)
+        row = _factor_row(name, factors, prev_factors, raw, dist)
         if row is not None:
             rows.append(row)
     return rows
 
 
-def _industry_factor_table(snapshots: list[dict], iid: str) -> list[dict]:
+def _industry_factor_table(snapshots: list[dict], iid: str, dist=None) -> list[dict]:
     """某行業的完整 13 因子明細（地點因子 + 該行業競爭/錨點）。"""
     if not snapshots:
         return []
@@ -80,7 +81,7 @@ def _industry_factor_table(snapshots: list[dict], iid: str) -> list[dict]:
     raw.update(meta.get("raw", {}))
     rows = []
     for name in ALL_FACTORS:
-        row = _factor_row(name, factors, prev_factors, raw)
+        row = _factor_row(name, factors, prev_factors, raw, dist)
         if row is not None:
             rows.append(row)
     return rows
@@ -111,8 +112,9 @@ def _industry_breakdown(meta: dict, config, iid: str) -> dict | None:
     }
 
 
-def build_payload(snapshots: list[dict], config=None) -> dict:
+def build_payload(snapshots: list[dict], config=None, dist=None) -> dict:
     """組前端 history.json 主體：地點因子共用區塊 + 依 group/industry 分組。"""
+    dist = dist if dist is not None else load_distributions()
     latest = snapshots[-1] if snapshots else {}
     dates = [s["date"] for s in snapshots]
     industries_meta = latest.get("industries", {})
@@ -125,7 +127,7 @@ def build_payload(snapshots: list[dict], config=None) -> dict:
             "label": meta["label"],
             "score": meta["score"],
             "trend": trend,
-            "factors": _industry_factor_table(snapshots, iid),
+            "factors": _industry_factor_table(snapshots, iid, dist),
             "breakdown": _industry_breakdown(meta, config, iid),
             "geo": meta.get("geo", {}),
         }
@@ -138,18 +140,19 @@ def build_payload(snapshots: list[dict], config=None) -> dict:
             "latlon": list(geocode.SITE_LATLON),
         },
         "dates": dates,
-        "location_factors": _location_factor_table(snapshots),
+        "location_factors": _location_factor_table(snapshots, dist),
         "groups": groups,
     }
 
 
-def build_site(history_path, site_dir, config=None) -> None:
+def build_site(history_path, site_dir, config=None, dist=None) -> None:
     """讀 jsonl → 寫 site_dir/data/history.json 與 geo.json（geo 依 industry id）。"""
     snapshots = _load_snapshots(history_path)
     data_dir = Path(site_dir) / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    payload = build_payload(snapshots, config)
+    dist = dist if dist is not None else load_distributions()
+    payload = build_payload(snapshots, config, dist)
     (data_dir / "history.json").write_text(
         json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 

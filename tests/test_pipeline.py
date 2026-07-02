@@ -103,3 +103,17 @@ def test_offline_snapshot_has_empty_geo(tmp_path):
     snap = run_pipeline(ref, hist, CONFIG, live=False)
     for d in snap["industries"].values():
         assert d["geo"] == {}
+
+
+def test_run_pipeline_uses_committed_distributions(tmp_path):
+    from site_siting.analysis.percentile import load_distributions, percentile_score
+    ref = _make_reference_dir(tmp_path)
+    hist = tmp_path / "history.jsonl"
+    snap = run_pipeline(ref, hist, CONFIG, live=False)
+    pp = snap["location"]["factors"]["purchasing_power"]
+    assert pp["source"] == "real"
+    # 已提交 purchasing_power.json → 分數須等於百分位、而非舊 minmax（48.86）
+    inc = snap["location"]["raw"]["weighted_median_income"]
+    expected = percentile_score(inc, load_distributions()["purchasing_power"])
+    assert abs(pp["score"] - expected) < 1e-6
+    assert pp["score"] > 60.0   # 百分位 81 遠高於舊 minmax 48.86
