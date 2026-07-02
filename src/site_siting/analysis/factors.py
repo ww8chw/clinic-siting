@@ -246,8 +246,8 @@ def build_factors(raw: dict, dist: dict | None = None) -> dict[str, FactorResult
 
     # 重劃/發展階段：實價登錄區級成交屋齡中位（越新越發展）；無資料 → 手動中性
     if raw.get("building_age_median") is not None:
-        score = minmax_score(raw["building_age_median"],
-                             REDEV_AGE_LO, REDEV_AGE_HI, invert=True)
+        score = _pctl_or_minmax("redevelopment_stage", raw["building_age_median"],
+                                REDEV_AGE_LO, REDEV_AGE_HI, invert=True)
         out["redevelopment_stage"] = FactorResult(score, "degraded")
     else:
         out["redevelopment_stage"] = FactorResult(NEUTRAL, "manual")
@@ -401,9 +401,10 @@ def factor_explanation(name: str, raw: dict, dist: dict | None = None) -> dict:
         v = g("building_age_median")
         if v is None:
             return {"raw": "待人工填入", "basis": "中性 50（手動因子，未來由介面覆寫）"}
+        pb = _pctl_basis("redevelopment_stage", v, invert=True)
         return {
             "raw": f"區內成交屋齡中位 {v:.0f} 年",
-            "basis": (f"實價登錄屋齡映射 {REDEV_AGE_LO:.0f}–{REDEV_AGE_HI:.0f} 年（反向，"
-                      f"越新越高）；區級代理標 degraded"),
+            "basis": pb or (f"實價登錄屋齡映射 {REDEV_AGE_LO:.0f}–{REDEV_AGE_HI:.0f} 年（反向，"
+                            f"越新越高）；區級代理標 degraded"),
         }
     return {"raw": "—", "basis": "—"}

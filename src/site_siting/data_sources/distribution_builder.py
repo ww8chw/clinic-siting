@@ -5,6 +5,7 @@ from datetime import date
 from pathlib import Path
 
 from site_siting.analysis.percentile import Distribution
+from site_siting.data_sources.realprice import district_median_building_age
 
 
 def make_distribution(factor: str, unit: str, source: str,
@@ -24,6 +25,16 @@ def population_values(population: dict[str, dict]) -> list[float]:
     """parse_population_csv 產出 → 各區人口（>0 者）。"""
     return [float(r["population"]) for r in population.values()
             if r.get("population")]
+
+
+def building_age_values(records, as_of_year: int, districts) -> list[float]:
+    """各行政區成交屋齡中位 → list（有值者）。"""
+    out = []
+    for d in districts:
+        age = district_median_building_age(records, d, as_of_year)
+        if age is not None:
+            out.append(float(age))
+    return out
 
 
 def write_distribution(dist: Distribution, path) -> None:

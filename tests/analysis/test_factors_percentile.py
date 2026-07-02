@@ -42,3 +42,12 @@ def test_explanation_shows_percentile_and_n():
 def test_explanation_falls_back_without_dist():
     exp = factor_explanation("purchasing_power", RAW)
     assert "線性映射" in exp["basis"]
+
+
+def test_building_age_percentile_inverts():
+    d = _dist("redevelopment_stage", "區", [5, 10, 20, 30, 40])
+    raw = {"building_age_median": 10.0}
+    f = build_factors(raw, dist={"redevelopment_stage": d})
+    # 10 在第2位 midrank=(1+2)/2=1.5 → pctl 30 → invert 70
+    assert f["redevelopment_stage"].score == 70.0
+    assert f["redevelopment_stage"].source == "degraded"

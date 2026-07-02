@@ -1,7 +1,7 @@
 import json
 from site_siting.data_sources.distribution_builder import (
     make_distribution, income_median_values, population_values,
-    write_distribution)
+    write_distribution, building_age_values)
 
 
 def test_income_median_values_extracts_medians():
@@ -41,3 +41,16 @@ def test_write_distribution_roundtrip(tmp_path):
     assert loaded["source"] == "內政部"
     assert loaded["values"] == [1.0, 2.0, 3.0]
     assert loaded["generated"] == "2026-07-02"
+
+
+def test_building_age_values_per_district_median():
+    records = [
+        {"district": "龜山區", "completion_date": "0900101"},  # 屋齡舊
+        {"district": "龜山區", "completion_date": "1100101"},
+        {"district": "桃園區", "completion_date": "1120101"},  # 屋齡新
+        {"district": "無日期區", "completion_date": ""},        # 略過
+    ]
+    vals = building_age_values(records, as_of_year=2026,
+                               districts=["龜山區", "桃園區", "無日期區"])
+    # 龜山區 median(屋齡[25,5])=15、桃園區=3；無日期區無值不計
+    assert sorted(vals) == [3.0, 15.0]
