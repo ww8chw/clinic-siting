@@ -82,6 +82,95 @@ function renderFreshness(payload) {
   el.textContent = `資料更新於 ${last}（${ageTxt}）${stale ? "　⚠ 已逾 " + STALE_DAYS + " 天，建議重新刷新" : ""}`;
 }
 
+// 某行業相對全體的「因子貢獻優勢」：contribution 減去全體平均 → 贏在哪些因子
+function factorEdges(flat, iid) {
+  const target = flat[iid];
+  if (!target || !target.breakdown || !target.breakdown.rows) return [];
+  const all = Object.values(flat).filter(d => d.breakdown && d.breakdown.rows);
+  const contrib = {}, score = {};
+  target.breakdown.rows.forEach(r => { contrib[r.factor] = r.contribution; score[r.factor] = r.score; });
+  return Object.keys(contrib).map(f => {
+    const vals = all.map(d => {
+      const row = d.breakdown.rows.find(r => r.factor === f);
+      return row ? row.contribution : 0;
+    });
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+    return { factor: f, score: score[f], edge: contrib[f] - mean };
+  }).sort((a, b) => b.edge - a.edge);
+}
+
+// 觀察評語：從現有資料自動生成白話觀察（排名、贏在哪、組別、趨勢、地點強弱項）
+function renderInsights(payload, flat) {
+  const card = document.getElementById("insights-card");
+  const list = document.getElementById("insights-list");
+  if (!card || !list) return;
+  const rankedEntries = Object.entries(flat)
+    .filter(([, d]) => d.score != null)
+    .sort((a, b) => b[1].score - a[1].score);
+  if (!rankedEntries.length) { card.hidden = true; return; }
+  const ranked = rankedEntries.map(([, d]) => d);
+
+  const items = [];
+  const top = ranked[0], bottom = ranked[ranked.length - 1];
+  const topIid = rankedEntries[0][0];
+  items.push(`最適合的是<b>${top.label}</b>（${groupLabel(top.group)}），總分 <b>${fmt(top.score)}</b>。` +
+    `全 ${ranked.length} 個行業落在 ${fmt(bottom.score)}–${fmt(top.score)} 分，差距僅 ${fmt(top.score - bottom.score)} 分，選擇彈性大。`);
+
+  // 贏在哪：它較看重、且本地點分數突出的因子（貢獻高於全體平均）
+  const edges = factorEdges(flat, topIid)
+    .filter(e => e.edge > 0.3 && e.score >= 70).slice(0, 3);
+  if (edges.length) {
+    const txt = edges.map(e => `${factorLabel(e.factor)}（${fmt(e.score)} 分）`).join("、");
+    items.push(`<b>${top.label}</b>能勝出，是因為它特別看重、而本地點又剛好分數特別高的幾項：${txt}——這些因子它給的權重高於其他行業，因此拉開差距。`);
+  }
+
+  // 領先組別（組內平均分）
+  const byGroup = {};
+  ranked.forEach(d => { (byGroup[d.group] = byGroup[d.group] || []).push(d.score); });
+  const groupAvg = Object.entries(byGroup)
+    .map(([g, a]) => [g, a.reduce((x, y) => x + y, 0) / a.length, a.length])
+    .filter(([, , n]) => n >= 2)   // 單一行業的組不納入「平均最高」比較，避免以偏概全
+    .sort((a, b) => b[1] - a[1]);
+  if (groupAvg.length > 1) {
+    const [g, avg, n] = groupAvg[0];
+    items.push(`<b>${groupLabel(g)}</b>組平均最高（${fmt(avg)} 分，${n} 個行業），此地點偏向適合${groupLabel(g)}類店面。`);
+  }
+
+  // 趨勢變化：找有兩筆以上可比資料、變化最大的行業
+  let mover = null;
+  Object.values(flat).forEach(d => {
+    const t = (d.trend || []).filter(v => v != null);
+    if (t.length >= 2) {
+      const delta = t[t.length - 1] - t[t.length - 2];
+      if (!mover || Math.abs(delta) > Math.abs(mover.delta)) mover = { label: d.label, delta };
+    }
+  });
+  if (mover && Math.abs(mover.delta) >= 0.1) {
+    const dir = mover.delta > 0 ? "上升" : "下降";
+    items.push(`較上次刷新，變化最大的是<b>${mover.label}</b>，${dir} ${fmt(Math.abs(mover.delta))} 分。`);
+  } else if ((payload.dates || []).length <= 1) {
+    items.push(`目前為本評分機制的首批資料，尚無可比較的歷史；後續每月刷新後會在此顯示分數升降。`);
+  }
+
+  // 地點強弱項
+  const lf = (payload.location_factors || []).filter(f => f.score != null);
+  if (lf.length) {
+    const sorted = lf.slice().sort((a, b) => b.score - a.score);
+    const strong = sorted.slice(0, 3).map(f => `${factorLabel(f.factor)} ${fmt(f.score)}`);
+    items.push(`地點最突出的優勢：${strong.join("、")}。`);
+    const weak = sorted.filter(f =>
+      f.source === "missing" || f.source === "degraded" || f.score <= 50);
+    if (weak.length) {
+      const weakTxt = weak.map(f =>
+        `${factorLabel(f.factor)}（${SOURCE_LABELS[f.source] || f.source}）`);
+      items.push(`待補強或資料待確認：${weakTxt.join("、")}。`);
+    }
+  }
+
+  list.innerHTML = items.map(t => `<li>${t}</li>`).join("");
+  card.hidden = false;
+}
+
 // 全行業排名：用最新分數排序（跨所有組），點選可切換至該行業
 function renderRanking(flat, onPick) {
   const el = document.getElementById("ranking");
@@ -215,6 +304,24 @@ function renderIndustryFactorTable(entry) {
   document.getElementById("industry-factor-title").textContent =
     `${entry.label}：行業因子`;
   renderFactorRows("#industry-factor-table", entry.factors);
+}
+
+// 選定行業的醒目給分（切換行業即時更新），附全行業排名名次
+function renderSelectedScore(entry, flat, iid) {
+  const box = document.getElementById("selected-score");
+  if (!box) return;
+  document.getElementById("ss-name").textContent = entry.label;
+  document.getElementById("ss-group").textContent = groupLabel(entry.group);
+  document.getElementById("ss-number").textContent = fmt(entry.score);
+  const ranked = Object.entries(flat)
+    .filter(([, d]) => d.score != null)
+    .sort((a, b) => b[1].score - a[1].score)
+    .map(([id]) => id);
+  const pos = ranked.indexOf(iid);
+  const rankEl = document.getElementById("ss-rank");
+  rankEl.textContent = (entry.score != null && pos >= 0)
+    ? `全行業第 ${pos + 1} / ${ranked.length} 名` : "";
+  box.hidden = false;
 }
 
 // 競爭距離權重（與後端 aggregate.proximity_weight 一致）
@@ -369,6 +476,7 @@ async function main() {
   const flat = flatIndustries(payload);
 
   renderMeta(payload);
+  renderInsights(payload, flat);
   renderFactorRows("#location-factor-table", payload.location_factors);
   initMap(payload);
 
@@ -402,6 +510,7 @@ async function main() {
     }
     tabsEl.querySelectorAll(".tab").forEach(t =>
       t.classList.toggle("active", t.dataset.iid === iid));
+    renderSelectedScore(entry, flat, iid);
     renderBreakdown(entry);
     renderIndustryFactorTable(entry);
     document.getElementById("competitor-title").innerHTML =
