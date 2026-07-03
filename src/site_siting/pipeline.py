@@ -47,8 +47,13 @@ def collect_industry(center: tuple[float, float], profile) -> tuple[dict, dict]:
     geo: dict = {}
     pools_out = []
     competitors_geo: list[dict] = []
+    # 每池獨立容錯：單一來源失敗（如 Overpass 429）只略過該池，
+    # 交給 factors/snapshot 降級，不炸掉整包刷新（含零網路的百分位因子）。
     for pool in profile.competitors:
-        pts = scan_pool(center, pool)
+        try:
+            pts = scan_pool(center, pool)
+        except Exception:
+            continue
         cnt = count_within(center, pts, DRIVE_KM)
         wt = round(weighted_count_within(center, pts, DRIVE_KM), 2)
         pools_out.append({"pool": pool.get("pool", "同業"),
@@ -58,7 +63,10 @@ def collect_industry(center: tuple[float, float], profile) -> tuple[dict, dict]:
         raw["competition_pools"] = pools_out
         geo["competitors"] = competitors_geo
 
-    anchors = scan_anchors(center, profile.anchors)
+    try:
+        anchors = scan_anchors(center, profile.anchors)
+    except Exception:
+        anchors = []
     if anchors:
         raw["anchor_count"] = count_within(center, anchors, DRIVE_KM)
         raw["anchor_weighted"] = round(

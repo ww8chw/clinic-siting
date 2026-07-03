@@ -117,3 +117,29 @@ def test_run_pipeline_uses_committed_distributions(tmp_path):
     expected = percentile_score(inc, load_distributions()["purchasing_power"])
     assert abs(pp["score"] - expected) < 1e-6
     assert pp["score"] > 60.0   # 百分位 81 遠高於舊 minmax 48.86
+
+
+def test_collect_industry_degrades_on_geo_failure(monkeypatch):
+    """OSM/Google 掃描拋例外（如 429）時，collect_industry 不應崩潰，
+    而是降級略過該區塊——比照 collect_location 既有容錯，避免單一暫時性
+    網路失敗炸掉整包月度刷新（含零網路的百分位因子）。"""
+    import site_siting.pipeline as pl
+    from requests.exceptions import HTTPError
+
+    def boom(*a, **k):
+        raise HTTPError("429 Too Many Requests")
+
+    monkeypatch.setattr(pl, "scan_pool", boom)
+    monkeypatch.setattr(pl, "scan_anchors", boom)
+
+    prof = IndustryProfile(
+        id="bubble_tea", group="food", label="手搖飲",
+        competitors=[{"source": "osm", "tags": {"amenity": "cafe"}}],
+        anchors={"source": "osm", "tags": {"amenity": "school"}},
+        weights={},
+    )
+    raw, geo = collect_industry((25.0, 121.0), prof)
+    # 降級：競爭/錨點缺漏（交給 factors 標 missing），但不拋例外
+    assert "competition_pools" not in raw
+    assert "anchor_count" not in raw
+    assert geo == {}
